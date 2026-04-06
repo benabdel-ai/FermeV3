@@ -1,0 +1,759 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ma Ferme Pro — Aperçu</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@600;700;800;900&display=swap');
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'Cairo',sans-serif;background:#f4f7f4;color:#16231c;display:flex;justify-content:center;align-items:center;min-height:100vh;padding:20px}
+
+  /* Phone shell */
+  .phone{width:390px;height:844px;background:#f4f7f4;border-radius:48px;box-shadow:0 40px 80px rgba(0,0,0,.35),inset 0 0 0 2px #222;overflow:hidden;display:flex;flex-direction:column;position:relative}
+  .phone::before{content:'';position:absolute;top:0;left:50%;transform:translateX(-50%);width:120px;height:30px;background:#111;border-radius:0 0 20px 20px;z-index:100}
+
+  /* AppBar */
+  .appbar{background:#f4f7f4;padding:44px 16px 12px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+  .appbar-logo{width:44px;height:44px;border-radius:14px;background:linear-gradient(135deg,#245c3d,#59aa79);display:flex;align-items:center;justify-content:center;font-size:22px}
+  .appbar-title{flex:1;margin-left:10px}
+  .appbar-title h1{font-size:17px;font-weight:900;color:#245c3d;line-height:1}
+  .appbar-title p{font-size:11px;font-weight:700;color:#55695f}
+  .appbar-right{display:flex;align-items:center;gap:8px}
+  .appbar-date{background:#e8f3ec;border-radius:14px;padding:7px 12px;text-align:right}
+  .appbar-date span{display:block;font-size:11px;font-weight:900;color:#328458;line-height:1.2}
+  .appbar-date small{font-size:10px;font-weight:700;color:#55695f}
+  .icon-btn{width:40px;height:40px;border-radius:14px;background:#e8f3ec;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:18px}
+
+  /* Screen */
+  .screen{flex:1;overflow-y:auto;scrollbar-width:none}
+  .screen::-webkit-scrollbar{display:none}
+  .screen-content{padding:0 16px 24px}
+
+  /* Bottom nav */
+  .nav{height:82px;background:#fff;border-top:1px solid #e7efea;display:flex;align-items:center;flex-shrink:0}
+  .nav-item{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer;padding:10px 0;border:none;background:none;font-family:'Cairo',sans-serif}
+  .nav-item svg{width:24px;height:24px}
+  .nav-item span{font-size:11px;font-weight:700;color:#8aa095}
+  .nav-item.active svg{color:#245c3d;width:28px;height:28px}
+  .nav-item.active span{font-size:12px;font-weight:900;color:#245c3d}
+  .nav-indicator{display:none}
+  .nav-item.active .nav-bg{background:#eaf7f0;border-radius:16px;padding:6px 14px}
+
+  /* Filter bar */
+  .filter-bar{display:flex;gap:8px;padding:12px 0}
+  .chip{padding:8px 14px;border-radius:20px;font-size:13px;font-weight:800;cursor:pointer;border:1px solid #d5e5db;background:#fff;color:#55695f;transition:.15s}
+  .chip.active{background:#245c3d;color:#fff;border-color:#245c3d}
+
+  /* Section title */
+  .section-title{margin-bottom:16px}
+  .section-title h2{font-size:22px;font-weight:900;color:#245c3d}
+  .section-title p{font-size:13px;font-weight:700;color:#8aa095;margin-top:2px}
+
+  /* Hero card */
+  .hero-card{background:linear-gradient(135deg,#256f49,#3baa74);border-radius:24px;padding:22px;margin-bottom:14px;position:relative;overflow:hidden}
+  .hero-card .bg-emoji{position:absolute;right:10px;top:5px;font-size:80px;opacity:.18}
+  .hero-card .count{font-size:58px;font-weight:900;color:#fff;line-height:1}
+  .hero-card .label{font-size:15px;font-weight:700;color:#fff;margin-top:6px}
+  .hero-card .sub{font-size:12px;font-weight:600;color:rgba(255,255,255,.75);margin-top:4px}
+
+  /* KPI grid */
+  .kpi-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px}
+  .kpi-card{background:#f7fbf8;border-radius:20px;border:1px solid #e7efea;padding:16px;position:relative}
+  .kpi-card .emoji-box{position:absolute;right:12px;top:12px;width:38px;height:38px;background:#fff;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:20px}
+  .kpi-card .val{font-size:30px;font-weight:900;color:#245c3d;line-height:1.1}
+  .kpi-card .lbl{font-size:12px;font-weight:800;color:#55695f;margin-top:8px}
+
+  /* Fin cards */
+  .fin-row{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px}
+  .fin-card{background:#fff;border-radius:20px;border:1px solid #e7efea;padding:14px;min-width:140px}
+  .fin-card .val{font-size:17px;font-weight:900;line-height:1.15}
+  .fin-card .lbl{font-size:11px;font-weight:800;color:#8aa095;margin-top:4px}
+  .red{color:#d64545}
+  .green{color:#245c3d}
+  .orange{color:#e68e00}
+
+  /* Quick btns */
+  .quick-title{font-size:11px;font-weight:800;letter-spacing:.6px;color:#8aa095;margin-bottom:10px}
+  .quick-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:14px}
+  .quick-btn{background:#fff;border-radius:22px;border:1px solid #d5e5db;padding:18px 8px;display:flex;flex-direction:column;align-items:center;gap:10px;cursor:pointer;box-shadow:0 4px 10px rgba(0,0,0,.06)}
+  .quick-btn .q-emoji{font-size:34px}
+  .quick-btn .q-lbl{font-size:13px;font-weight:900;color:#16231c;text-align:center;line-height:1.2}
+
+  /* App card */
+  .app-card{background:#fff;border-radius:22px;border:1px solid #e7efea;padding:18px;margin-bottom:14px;box-shadow:0 8px 18px rgba(0,0,0,.06)}
+  .card-title{font-size:11px;font-weight:900;letter-spacing:.6px;color:#55695f;margin-bottom:14px}
+
+  /* History item */
+  .hist-item{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid #f0f5f2}
+  .hist-item:last-child{border-bottom:none}
+  .hist-icon{width:48px;height:48px;border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0}
+  .hist-body{flex:1}
+  .hist-body .ht{font-size:14px;font-weight:900;color:#16231c}
+  .hist-body .hs{font-size:11px;color:#8aa095;font-weight:700;margin-top:2px}
+  .hist-val{font-size:14px;font-weight:900}
+  .bg-green{background:#eaf7f0}
+  .bg-red{background:#fdeee}
+  .bg-blue{background:#eaf2ff}
+  .bg-orange{background:#fff5e7}
+
+  /* Chart placeholder */
+  .chart-wrap{height:180px;position:relative;overflow:hidden}
+  .chart-wrap svg{width:100%;height:100%}
+
+  /* Tab bar */
+  .tab-bar{display:flex;border-bottom:1px solid #e7efea;margin-bottom:0}
+  .tab{flex:1;padding:12px 4px;text-align:center;font-size:13px;font-weight:700;color:#8aa095;cursor:pointer;border-bottom:2px solid transparent;transition:.15s}
+  .tab.active{color:#245c3d;font-weight:900;border-bottom:2px solid #245c3d}
+
+  /* Culture KPI */
+  .culture-kpis{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:14px}
+  .culture-kpi{background:#f7fbf8;border-radius:18px;border:1px solid #e7efea;padding:12px;width:150px}
+  .culture-kpi .ce{font-size:26px}
+  .culture-kpi .cv{font-size:16px;font-weight:900;color:#245c3d;margin-top:6px}
+  .culture-kpi .cl{font-size:10px;font-weight:800;color:#55695f}
+
+  /* Trituration card */
+  .trit-card{background:#fff;border-radius:18px;border:1px solid #e7efea;padding:14px;margin-bottom:10px}
+  .trit-row{display:flex;justify-content:space-between;padding:3px 0;font-size:12px}
+  .trit-row .tk{color:#8aa095;font-weight:700}
+  .trit-row .tv{color:#16231c;font-weight:900}
+
+  /* Recurring item */
+  .rec-item{border-radius:16px;padding:14px;margin-bottom:10px}
+  .rec-item.due{background:#fdeeeebf;border:1px solid rgba(214,69,69,.25)}
+  .rec-item.paid{background:#eaf7f0bf;border:1px solid rgba(36,92,61,.2)}
+  .rec-item.inactive{background:#f7faf8;border:1px solid #e7efea}
+  .rec-item .ri-top{display:flex;align-items:center;gap:12px}
+  .rec-icon{width:44px;height:44px;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:900;flex-shrink:0}
+  .rec-icon.due-ic{background:rgba(214,69,69,.12);color:#d64545}
+  .rec-icon.paid-ic{background:rgba(36,92,61,.12);color:#245c3d}
+  .rec-icon.inact-ic{background:#e8f3ec;color:#8aa095}
+  .rec-body .rn{font-size:14px;font-weight:900;color:#16231c}
+  .rec-body .rm{font-size:12px;font-weight:800}
+  .rec-body .rd{font-size:10px;color:#8aa095;font-weight:700}
+  .rec-actions{margin-top:10px;display:flex;align-items:center;justify-content:space-between}
+  .pay-btn{background:#245c3d;color:#fff;border:none;border-radius:10px;padding:6px 14px;font-size:12px;font-weight:900;cursor:pointer;font-family:'Cairo',sans-serif}
+  .icon-actions{display:flex;gap:4px}
+  .icon-actions button{background:none;border:none;cursor:pointer;padding:4px;border-radius:8px;font-size:15px}
+
+  /* Worker item */
+  .worker-item{background:#fff;border-radius:18px;border:1px solid #e7efea;padding:12px 14px;margin-bottom:10px;display:flex;align-items:center;gap:12px}
+  .worker-icon{width:50px;height:50px;border-radius:16px;background:#fff5e7;display:flex;align-items:center;justify-content:center;font-size:24px;flex-shrink:0}
+  .worker-body{flex:1}
+  .worker-body .wn{font-size:14px;font-weight:900}
+  .worker-body .wd{font-size:11px;color:#8aa095;font-weight:700}
+  .worker-val{font-size:13px;font-weight:900;color:#d64545}
+
+  /* Ferme badge */
+  .fbadge{display:inline-block;padding:3px 8px;border-radius:7px;font-size:10px;font-weight:800;margin-top:4px}
+  .fbadge.rhamna{background:#eaf2ff;color:#1f63c3}
+  .fbadge.srahna{background:#fff5e7;color:#e68e00}
+
+  /* Add button */
+  .add-btn{width:100%;background:#245c3d;color:#fff;border:none;border-radius:20px;height:58px;font-size:16px;font-weight:900;cursor:pointer;margin-bottom:14px;display:flex;align-items:center;justify-content:center;gap:8px;font-family:'Cairo',sans-serif}
+  .add-btn.red{background:#b33434}
+
+  /* Finance tabs */
+  .fin-summary{display:flex;gap:10px;margin-bottom:14px}
+  .cat-row{margin-bottom:10px}
+  .cat-row .cr-top{display:flex;justify-content:space-between;margin-bottom:5px;font-size:13px;font-weight:800}
+  .cat-bar{height:7px;border-radius:10px;background:#e8f3ec;overflow:hidden}
+  .cat-bar-fill{height:100%;border-radius:10px;background:#245c3d}
+  .cat-bar-fill.red-fill{background:#d64545}
+
+  /* Recent item */
+  .recent-item{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid #f0f5f2}
+  .recent-item:last-child{border-bottom:none}
+
+  /* page visibility */
+  .page{display:none}
+  .page.active{display:block}
+
+  /* Bottom sheet */
+  .sheet-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:200;justify-content:flex-end;flex-direction:column}
+  .sheet-overlay.open{display:flex}
+  .sheet{background:#f4f7f4;border-radius:28px 28px 0 0;padding:20px 20px 32px;max-height:88%;overflow-y:auto}
+  .sheet-handle{width:40px;height:4px;background:#d5e5db;border-radius:2px;margin:0 auto 18px}
+  .sheet h3{font-size:19px;font-weight:900;color:#245c3d;margin-bottom:18px}
+  .form-field{background:#f7faf8;border:1px solid #e7efea;border-radius:18px;padding:14px 16px;margin-bottom:12px;width:100%;font-size:14px;font-weight:700;font-family:'Cairo',sans-serif;color:#16231c;outline:none}
+  .form-field:focus{border-color:#328458}
+  .form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px}
+  .form-label{font-size:11px;font-weight:900;color:#8aa095;letter-spacing:.5px;margin-bottom:6px}
+  .ferme-toggle{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px}
+  .ft-btn{padding:11px;border-radius:14px;border:1px solid #d5e5db;background:#fff;font-size:13px;font-weight:800;cursor:pointer;text-align:center;font-family:'Cairo',sans-serif;transition:.15s}
+  .ft-btn.sel{background:#245c3d;color:#fff;border-color:#245c3d}
+  .section-sep{font-size:10px;font-weight:900;color:#8aa095;letter-spacing:.5px;margin:4px 0 8px}
+</style>
+</head>
+<body>
+
+<div class="phone">
+  <!-- AppBar -->
+  <div class="appbar">
+    <div class="appbar-logo">🐑</div>
+    <div class="appbar-title">
+      <h1>Ma Ferme Pro</h1>
+      <p>Elevage &amp; suivi financier</p>
+    </div>
+    <div class="appbar-right">
+      <button class="icon-btn">⚙️</button>
+      <div class="appbar-date">
+        <span>DIM</span>
+        <small>06/04/2026</small>
+      </div>
+    </div>
+  </div>
+
+  <!-- Screen -->
+  <div class="screen" id="screen">
+
+    <!-- PAGE 0 : Accueil -->
+    <div class="page active" id="p0">
+      <div class="filter-bar" style="padding:4px 16px 0">
+        <div class="chip active">🌍 Toutes</div>
+        <div class="chip">🐑 Rhamna</div>
+        <div class="chip">🫒 Srahna</div>
+      </div>
+      <div class="screen-content">
+        <!-- Action buttons -->
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:8px 0 16px">
+          <button onclick="openSheet('rev-sheet')" style="background:linear-gradient(135deg,#1b7a46,#2da865);border:none;border-radius:20px;padding:18px 0;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:7px;box-shadow:0 6px 18px rgba(27,122,70,.35);font-family:'Cairo',sans-serif">
+            <span style="font-size:28px">💰</span>
+            <span style="font-size:15px;font-weight:900;color:#fff;letter-spacing:.1px">Revenus</span>
+          </button>
+          <button onclick="openSheet('dep-sheet')" style="background:linear-gradient(135deg,#b5192e,#e02040);border:none;border-radius:20px;padding:18px 0;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:7px;box-shadow:0 6px 18px rgba(181,25,46,.35);font-family:'Cairo',sans-serif">
+            <span style="font-size:28px">💸</span>
+            <span style="font-size:15px;font-weight:900;color:#fff;letter-spacing:.1px">Dépenses</span>
+          </button>
+        </div>
+        <div class="section-title">
+          <h2>📊 Tableau de bord</h2>
+          <p>avril 2026</p>
+        </div>
+        <div class="hero-card">
+          <div class="bg-emoji">🐑</div>
+          <div class="count">142</div>
+          <div class="label">Cheptel total</div>
+          <div class="sub">87 brebis · 12 béliers · 43 agneaux</div>
+        </div>
+        <div class="kpi-grid">
+          <div class="kpi-card"><div class="emoji-box">🐑</div><div class="val">87</div><div class="lbl">Femelles</div></div>
+          <div class="kpi-card"><div class="emoji-box">🐏</div><div class="val">12</div><div class="lbl">Mâles</div></div>
+          <div class="kpi-card"><div class="emoji-box">🍼</div><div class="val">21</div><div class="lbl">Agneaux ♀</div></div>
+          <div class="kpi-card"><div class="emoji-box">🐣</div><div class="val">22</div><div class="lbl">Agneaux ♂</div></div>
+        </div>
+        <div class="fin-row">
+          <div class="fin-card"><div class="val red">4 200 MAD</div><div class="lbl">Dépenses mois</div></div>
+          <div class="fin-card"><div class="val green">6 800 MAD</div><div class="lbl">Revenus mois</div></div>
+          <div class="fin-card"><div class="val green">2 600 MAD</div><div class="lbl">Bilan +</div></div>
+        </div>
+        <div class="quick-title">RACCOURCIS RAPIDES</div>
+        <div class="quick-grid">
+          <div class="quick-btn"><div class="q-emoji">🍼</div><div class="q-lbl">Naissance</div></div>
+          <div class="quick-btn"><div class="q-emoji">💸</div><div class="q-lbl">Dépense</div></div>
+          <div class="quick-btn"><div class="q-emoji">💰</div><div class="q-lbl">Revenu</div></div>
+          <div class="quick-btn"><div class="q-emoji">🛒</div><div class="q-lbl">Achat</div></div>
+          <div class="quick-btn"><div class="q-emoji">🤝</div><div class="q-lbl">Vente</div></div>
+          <div class="quick-btn"><div class="q-emoji">💀</div><div class="q-lbl">Décès</div></div>
+        </div>
+        <div class="app-card">
+          <div class="card-title">📈 ÉVOLUTION DU TROUPEAU — 6 MOIS</div>
+          <div class="chart-wrap">
+            <svg viewBox="0 0 360 160" preserveAspectRatio="none">
+              <defs><linearGradient id="gr" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#245c3d" stop-opacity=".25"/><stop offset="100%" stop-color="#245c3d" stop-opacity="0"/></linearGradient></defs>
+              <polyline fill="url(#gr)" stroke="none" points="0,160 0,105 60,95 120,80 180,70 240,62 300,55 360,48 360,160"/>
+              <polyline fill="none" stroke="#245c3d" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" points="0,105 60,95 120,80 180,70 240,62 300,55 360,48"/>
+              <circle cx="0" cy="105" r="5" fill="#245c3d"/><circle cx="60" cy="95" r="5" fill="#245c3d"/><circle cx="120" cy="80" r="5" fill="#245c3d"/><circle cx="180" cy="70" r="5" fill="#245c3d"/><circle cx="240" cy="62" r="5" fill="#245c3d"/><circle cx="300" cy="55" r="5" fill="#245c3d"/><circle cx="360" cy="48" r="5" fill="#245c3d"/>
+              <text x="0" y="155" fill="#8aa095" font-size="13" font-family="Cairo">Oct</text>
+              <text x="52" y="155" fill="#8aa095" font-size="13" font-family="Cairo">Nov</text>
+              <text x="112" y="155" fill="#8aa095" font-size="13" font-family="Cairo">Déc</text>
+              <text x="168" y="155" fill="#8aa095" font-size="13" font-family="Cairo">Jan</text>
+              <text x="228" y="155" fill="#8aa095" font-size="13" font-family="Cairo">Fév</text>
+              <text x="288" y="155" fill="#8aa095" font-size="13" font-family="Cairo">Mar</text>
+            </svg>
+          </div>
+        </div>
+        <div class="app-card">
+          <div class="card-title">🕘 RÉCENT</div>
+          <div class="hist-item"><div class="hist-icon bg-green">🍼</div><div class="hist-body"><div class="ht">Naissance agneau ♀</div><div class="hs">02/04/2026</div></div><div class="hist-val green">×2</div></div>
+          <div class="hist-item"><div class="hist-icon bg-red" style="background:#fdeee">💸</div><div class="hist-body"><div class="ht">Alimentation</div><div class="hs">01/04/2026</div></div><div class="hist-val red">-800 MAD</div></div>
+          <div class="hist-item"><div class="hist-icon bg-green">💰</div><div class="hist-body"><div class="ht">Vente agneaux</div><div class="hs">30/03/2026</div></div><div class="hist-val green">+3 200 MAD</div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PAGE 1 : Cultures -->
+    <div class="page" id="p1">
+      <div class="filter-bar" style="padding:4px 16px 0">
+        <div class="chip active">🌍 Toutes</div>
+        <div class="chip">🐑 Rhamna</div>
+        <div class="chip">🫒 Srahna</div>
+      </div>
+      <div class="tab-bar" style="margin:0 16px">
+        <div class="tab active" onclick="switchCultureTab(0,this)">🌾 Récoltes</div>
+        <div class="tab" onclick="switchCultureTab(1,this)">🫒 Trituration</div>
+      </div>
+      <!-- Récoltes tab -->
+      <div class="screen-content" id="cult0">
+        <br>
+        <div class="section-title"><h2>🌾 Récoltes</h2><p>Production par culture et saison</p></div>
+        <div class="culture-kpis">
+          <div class="culture-kpi"><div class="ce">🫒</div><div class="cv">11 600 kg</div><div class="cl">Olives</div></div>
+          <div class="culture-kpi"><div class="ce">🍋</div><div class="cv">2 100 kg</div><div class="cl">Citrons</div></div>
+          <div class="culture-kpi"><div class="ce">🌿</div><div class="cv">3 200 kg</div><div class="cl">Luzerne</div></div>
+          <div class="culture-kpi"><div class="ce">🍑</div><div class="cv">640 kg</div><div class="cl">Figues</div></div>
+        </div>
+        <button class="add-btn" onclick="openSheet('sheet-recolte')">＋ Enregistrer une récolte</button>
+        <div class="app-card">
+          <div class="card-title">📋 HISTORIQUE RÉCOLTES</div>
+          <div class="hist-item">
+            <div class="hist-icon bg-green" style="font-size:26px">🫒</div>
+            <div class="hist-body"><div class="ht">Olives</div><div class="hs">Saison 2025 · 15/11/2025</div><div class="fbadge rhamna">🐑 Rhamna</div></div>
+            <div style="text-align:right"><div class="hist-val green">8 400 kg</div><div style="font-size:18px;color:#d64545;cursor:pointer">🗑</div></div>
+          </div>
+          <div class="hist-item">
+            <div class="hist-icon bg-green" style="font-size:26px">🫒</div>
+            <div class="hist-body"><div class="ht">Olives</div><div class="hs">Saison 2025 · 18/11/2025</div><div class="fbadge srahna">🫒 Srahna</div></div>
+            <div style="text-align:right"><div class="hist-val green">3 200 kg</div><div style="font-size:18px;color:#d64545;cursor:pointer">🗑</div></div>
+          </div>
+          <div class="hist-item">
+            <div class="hist-icon bg-green" style="font-size:26px">🌿</div>
+            <div class="hist-body"><div class="ht">Luzerne</div><div class="hs">Saison 2025 · 05/03/2025</div><div class="fbadge srahna">🫒 Srahna</div></div>
+            <div style="text-align:right"><div class="hist-val green">3 200 kg</div><div style="font-size:18px;color:#d64545;cursor:pointer">🗑</div></div>
+          </div>
+          <div class="hist-item">
+            <div class="hist-icon bg-green" style="font-size:26px">🍋</div>
+            <div class="hist-body"><div class="ht">Citrons</div><div class="hs">Saison 2025 · 20/02/2025</div><div class="fbadge rhamna">🐑 Rhamna</div></div>
+            <div style="text-align:right"><div class="hist-val green">2 100 kg</div><div style="font-size:18px;color:#d64545;cursor:pointer">🗑</div></div>
+          </div>
+        </div>
+      </div>
+      <!-- Trituration tab -->
+      <div class="screen-content" id="cult1" style="display:none">
+        <br>
+        <div class="section-title"><h2>🫒 Trituration</h2><p>Extraction huile d'olive par saison</p></div>
+        <div class="culture-kpis">
+          <div class="culture-kpi"><div class="ce">🫒</div><div class="cv">11 600 kg</div><div class="cl">Olives triturées</div></div>
+          <div class="culture-kpi"><div class="ce">🫙</div><div class="cv">1 508 L</div><div class="cl">Huile extraite</div></div>
+          <div class="culture-kpi"><div class="ce">📊</div><div class="cv">13.0%</div><div class="cl">Rendement moyen</div></div>
+        </div>
+        <button class="add-btn" onclick="openSheet('sheet-trit')">＋ Enregistrer une trituration</button>
+        <div class="app-card">
+          <div class="card-title">📋 HISTORIQUE TRITURATION</div>
+          <div class="trit-card">
+            <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+              <div style="width:44px;height:44px;background:#eaf7f0;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:22px">🫒</div>
+              <div><div style="font-size:14px;font-weight:900">Saison 2025 · 20/11/2025</div><div class="fbadge rhamna">🐑 Rhamna</div></div>
+              <div style="margin-left:auto;font-size:18px;color:#d64545;cursor:pointer">🗑</div>
+            </div>
+            <div class="trit-row"><span class="tk">🫒 Olives</span><span class="tv">8 400 kg</span></div>
+            <div class="trit-row"><span class="tk">🫙 Huile extraite</span><span class="tv">1 092 L (13.0%)</span></div>
+            <div class="trit-row"><span class="tk">💸 Coût moulin</span><span class="tv">2 100 MAD</span></div>
+            <div class="trit-row"><span class="tk">🤝 Vendu</span><span class="tv">800 L · 64 000 MAD</span></div>
+            <div class="trit-row"><span class="tk">🏠 Famille</span><span class="tv">150 L</span></div>
+            <div class="trit-row"><span class="tk">👨‍👩‍👧 Héritiers</span><span class="tv">142 L</span></div>
+          </div>
+          <div class="trit-card">
+            <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+              <div style="width:44px;height:44px;background:#eaf7f0;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:22px">🫒</div>
+              <div><div style="font-size:14px;font-weight:900">Saison 2025 · 22/11/2025</div><div class="fbadge srahna">🫒 Srahna</div></div>
+              <div style="margin-left:auto;font-size:18px;color:#d64545;cursor:pointer">🗑</div>
+            </div>
+            <div class="trit-row"><span class="tk">🫒 Olives</span><span class="tv">3 200 kg</span></div>
+            <div class="trit-row"><span class="tk">🫙 Huile extraite</span><span class="tv">416 L (13.0%)</span></div>
+            <div class="trit-row"><span class="tk">💸 Coût moulin</span><span class="tv">800 MAD</span></div>
+            <div class="trit-row"><span class="tk">🤝 Vendu</span><span class="tv">300 L · 24 000 MAD</span></div>
+            <div class="trit-row"><span class="tk">🏠 Famille</span><span class="tv">80 L</span></div>
+            <div class="trit-row"><span class="tk">👨‍👩‍👧 Héritiers</span><span class="tv">36 L</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PAGE 2 : Équipe -->
+    <div class="page" id="p2">
+      <div class="filter-bar" style="padding:4px 16px 0">
+        <div class="chip active">🌍 Toutes</div>
+        <div class="chip">🐑 Rhamna</div>
+        <div class="chip">🫒 Srahna</div>
+      </div>
+      <div class="screen-content">
+        <div class="section-title"><h2>👷 Équipe</h2><p>Salariés fixes et saisonniers</p></div>
+        <div class="app-card">
+          <div style="display:flex;align-items:center;margin-bottom:14px">
+            <div class="card-title" style="margin:0;flex:1">👥 SALARIÉS FIXES — HEBDOMADAIRE</div>
+            <div style="background:#fdeee;border-radius:10px;padding:4px 10px;font-size:11px;font-weight:900;color:#d64545">2 à payer</div>
+          </div>
+          <button class="add-btn" style="height:48px;font-size:14px" onclick="openSheet('sheet-recurring')">＋ Ajouter un salarié fixe</button>
+          <div class="rec-item due">
+            <div class="ri-top">
+              <div class="rec-icon due-ic">🔴</div>
+              <div class="rec-body" style="flex:1">
+                <div class="rn">Ahmed</div>
+                <div class="rm red">750 MAD / semaine</div>
+                <div class="rd">Payé le 26/03/2026</div>
+                <div class="fbadge rhamna">🐑 Rhamna</div>
+              </div>
+            </div>
+            <div class="rec-actions">
+              <button class="pay-btn">✓ Payer</button>
+              <div class="icon-actions"><button>⏸</button><button style="color:#d64545">🗑</button></div>
+            </div>
+          </div>
+          <div class="rec-item due">
+            <div class="ri-top">
+              <div class="rec-icon due-ic">🔴</div>
+              <div class="rec-body" style="flex:1">
+                <div class="rn">Brahim</div>
+                <div class="rm red">600 MAD / semaine</div>
+                <div class="rd">Payé le 24/03/2026</div>
+                <div class="fbadge srahna">🫒 Srahna</div>
+              </div>
+            </div>
+            <div class="rec-actions">
+              <button class="pay-btn">✓ Payer</button>
+              <div class="icon-actions"><button>⏸</button><button style="color:#d64545">🗑</button></div>
+            </div>
+          </div>
+          <div class="rec-item paid">
+            <div class="ri-top">
+              <div class="rec-icon paid-ic">✅</div>
+              <div class="rec-body" style="flex:1">
+                <div class="rn">Khalid</div>
+                <div class="rm green">500 MAD / semaine</div>
+                <div class="rd">Payé le 01/04/2026</div>
+                <div class="fbadge rhamna">🐑 Rhamna</div>
+              </div>
+              <div class="icon-actions"><button>⏸</button><button style="color:#d64545">🗑</button></div>
+            </div>
+          </div>
+        </div>
+        <div class="app-card">
+          <div class="card-title">🌾 SAISONNIERS</div>
+          <div style="font-size:13px;font-weight:900;color:#d64545;margin-bottom:12px">Total main-d'œuvre : 3 750 MAD</div>
+          <button class="add-btn" style="height:48px;font-size:14px" onclick="openSheet('sheet-session')">＋ Enregistrer une session</button>
+          <div class="worker-item">
+            <div class="worker-icon">👷</div>
+            <div class="worker-body">
+              <div class="wn">Mohamed Ali</div>
+              <div class="wd">5 j × 300 MAD/j · 28/03/2026</div>
+              <div class="fbadge rhamna">🐑 Rhamna</div>
+            </div>
+            <div style="text-align:right"><div class="worker-val">-1 500 MAD</div><div style="font-size:16px;color:#d64545;cursor:pointer">🗑</div></div>
+          </div>
+          <div class="worker-item">
+            <div class="worker-icon">👷</div>
+            <div class="worker-body">
+              <div class="wn">Hassan</div>
+              <div class="wd">6 j × 275 MAD/j · 15/03/2026</div>
+              <div class="fbadge srahna">🫒 Srahna</div>
+            </div>
+            <div style="text-align:right"><div class="worker-val">-1 650 MAD</div><div style="font-size:16px;color:#d64545;cursor:pointer">🗑</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PAGE 3 : Cheptel -->
+    <div class="page" id="p3">
+      <div class="screen-content" style="padding-top:16px">
+        <div class="section-title"><h2>🐑 Cheptel</h2><p>Suivi des entrées, sorties et état actuel</p></div>
+        <div class="app-card">
+          <div class="card-title">ÉTAT ACTUEL</div>
+          <div class="kpi-grid">
+            <div class="kpi-card"><div class="emoji-box">🐑</div><div class="val">87</div><div class="lbl">Femelles</div></div>
+            <div class="kpi-card"><div class="emoji-box">🐏</div><div class="val">12</div><div class="lbl">Mâles</div></div>
+            <div class="kpi-card"><div class="emoji-box">🍼</div><div class="val">21</div><div class="lbl">Agneaux ♀</div></div>
+            <div class="kpi-card"><div class="emoji-box">🐣</div><div class="val">22</div><div class="lbl">Agneaux ♂</div></div>
+          </div>
+        </div>
+        <div class="app-card">
+          <div class="card-title">➕ AJOUTER UN MOUVEMENT</div>
+          <div class="quick-grid">
+            <div class="quick-btn" style="background:#eaf7f0;border-color:#d5e5db"><div class="q-emoji">🍼</div><div class="q-lbl">Naissance ♀</div></div>
+            <div class="quick-btn" style="background:#eaf7f0;border-color:#d5e5db"><div class="q-emoji">🐣</div><div class="q-lbl">Naissance ♂</div></div>
+            <div class="quick-btn" style="background:#eaf7f0;border-color:#d5e5db"><div class="q-emoji">🛒</div><div class="q-lbl">Achat</div></div>
+            <div class="quick-btn" style="background:#eaf7f0;border-color:#d5e5db"><div class="q-emoji">🤝</div><div class="q-lbl">Vente</div></div>
+            <div class="quick-btn" style="background:#eaf7f0;border-color:#d5e5db"><div class="q-emoji">💀</div><div class="q-lbl">Décès</div></div>
+            <div class="quick-btn" style="background:#eaf7f0;border-color:#d5e5db"><div class="q-emoji">⚙️</div><div class="q-lbl">Stock initial</div></div>
+          </div>
+        </div>
+        <div class="app-card">
+          <div class="card-title">📋 DERNIERS MOUVEMENTS</div>
+          <div class="hist-item"><div class="hist-icon bg-green">🍼</div><div class="hist-body"><div class="ht">Naissance agneau ♀</div><div class="hs">02/04/2026</div></div><div class="hist-val green">×2</div></div>
+          <div class="hist-item"><div class="hist-icon bg-green">🛒</div><div class="hist-body"><div class="ht">Achat brebis</div><div class="hs">15/03/2026</div></div><div class="hist-val green">×5</div></div>
+          <div class="hist-item"><div class="hist-icon" style="background:#fdeee">🤝</div><div class="hist-body"><div class="ht">Vente agneaux</div><div class="hs">30/03/2026</div></div><div class="hist-val red">×3</div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PAGE 4 : Finances -->
+    <div class="page" id="p4">
+      <div class="tab-bar" style="margin:0 0">
+        <div class="tab active" onclick="switchFinTab(0,this)">💸 Dépenses</div>
+        <div class="tab" onclick="switchFinTab(1,this)">💰 Revenus</div>
+        <div class="tab" onclick="switchFinTab(2,this)">📜 Historique</div>
+      </div>
+      <!-- Dépenses -->
+      <div id="fin0">
+        <div class="filter-bar" style="padding:4px 16px 0">
+          <div class="chip active">🌍 Toutes</div><div class="chip">🐑 Rhamna</div><div class="chip">🫒 Srahna</div>
+        </div>
+        <div class="screen-content">
+          <div class="section-title"><h2>💸 Dépenses</h2><p>Vue synthèse et journal des sorties</p></div>
+          <div class="fin-row">
+            <div class="fin-card"><div class="val red">4 200 MAD</div><div class="lbl">Ce mois</div></div>
+            <div class="fin-card"><div class="val red">28 400 MAD</div><div class="lbl">Total</div></div>
+          </div>
+          <button class="add-btn red">＋ Ajouter une dépense</button>
+          <div class="app-card">
+            <div class="card-title">📊 PAR CATÉGORIE</div>
+            <div class="cat-row"><div class="cr-top"><span>Alimentation</span><span class="red">8 200 MAD</span></div><div class="cat-bar"><div class="cat-bar-fill red-fill" style="width:29%"></div></div></div>
+            <div class="cat-row"><div class="cr-top"><span>Main-d'œuvre</span><span class="red">5 250 MAD</span></div><div class="cat-bar"><div class="cat-bar-fill red-fill" style="width:18%"></div></div></div>
+            <div class="cat-row"><div class="cr-top"><span>Trituration</span><span class="red">4 100 MAD</span></div><div class="cat-bar"><div class="cat-bar-fill red-fill" style="width:14%"></div></div></div>
+            <div class="cat-row"><div class="cr-top"><span>Vétérinaire</span><span class="red">3 800 MAD</span></div><div class="cat-bar"><div class="cat-bar-fill red-fill" style="width:13%"></div></div></div>
+            <div class="cat-row"><div class="cr-top"><span>Transport</span><span class="red">2 600 MAD</span></div><div class="cat-bar"><div class="cat-bar-fill red-fill" style="width:9%"></div></div></div>
+          </div>
+          <div class="app-card">
+            <div class="card-title">📋 TOUTES LES DÉPENSES</div>
+            <div class="hist-item"><div class="hist-icon" style="background:#fdeee">💸</div><div class="hist-body"><div class="ht">Trituration</div><div class="hs">20/11/2025 · Moulin Saison 2025</div></div><div class="hist-val red">-2 100</div></div>
+            <div class="hist-item"><div class="hist-icon" style="background:#fdeee">💸</div><div class="hist-body"><div class="ht">Main-d'œuvre</div><div class="hs">28/03/2026 · Mohamed Ali 5j</div></div><div class="hist-val red">-1 500</div></div>
+            <div class="hist-item"><div class="hist-icon" style="background:#fdeee">💸</div><div class="hist-body"><div class="ht">Alimentation</div><div class="hs">25/03/2026 · Foin + orge</div></div><div class="hist-val red">-1 200</div></div>
+          </div>
+        </div>
+      </div>
+      <!-- Revenus -->
+      <div id="fin1" style="display:none">
+        <div class="filter-bar" style="padding:4px 16px 0">
+          <div class="chip active">🌍 Toutes</div><div class="chip">🐑 Rhamna</div><div class="chip">🫒 Srahna</div>
+        </div>
+        <div class="screen-content">
+          <div class="section-title"><h2>💰 Revenus</h2><p>Vue synthèse et journal des encaissements</p></div>
+          <div class="fin-row">
+            <div class="fin-card"><div class="val green">6 800 MAD</div><div class="lbl">Ce mois</div></div>
+            <div class="fin-card"><div class="val green">94 200 MAD</div><div class="lbl">Total</div></div>
+          </div>
+          <button class="add-btn">＋ Ajouter un revenu</button>
+          <div class="app-card">
+            <div class="card-title">📊 PAR CATÉGORIE</div>
+            <div class="cat-row"><div class="cr-top"><span>Vente huile d'olive</span><span class="green">64 000 MAD</span></div><div class="cat-bar"><div class="cat-bar-fill" style="width:68%"></div></div></div>
+            <div class="cat-row"><div class="cr-top"><span>Vente agneaux</span><span class="green">18 000 MAD</span></div><div class="cat-bar"><div class="cat-bar-fill" style="width:19%"></div></div></div>
+            <div class="cat-row"><div class="cr-top"><span>Vente luzerne</span><span class="green">7 200 MAD</span></div><div class="cat-bar"><div class="cat-bar-fill" style="width:8%"></div></div></div>
+            <div class="cat-row"><div class="cr-top"><span>Vente citrons</span><span class="green">5 000 MAD</span></div><div class="cat-bar"><div class="cat-bar-fill" style="width:5%"></div></div></div>
+          </div>
+        </div>
+      </div>
+      <!-- Historique -->
+      <div id="fin2" style="display:none">
+        <div class="screen-content" style="padding-top:12px">
+          <div class="section-title"><h2>📜 Historique</h2><p>Toutes les opérations récentes</p></div>
+          <div style="display:flex;gap:8px;overflow-x:auto;margin-bottom:14px;padding-bottom:4px">
+            <div class="chip active">Tout</div><div class="chip">🐑 Troupeau</div><div class="chip">💸 Dépenses</div><div class="chip">💰 Revenus</div>
+          </div>
+          <div class="hist-item"><div class="hist-icon bg-green">🍼</div><div class="hist-body"><div class="ht">Naissance agneau ♀</div><div class="hs">02/04/2026</div></div><div class="hist-val green">×2</div></div>
+          <div class="hist-item"><div class="hist-icon" style="background:#fdeee">💸</div><div class="hist-body"><div class="ht">Alimentation</div><div class="hs">01/04/2026</div></div><div class="hist-val red">-800 MAD</div></div>
+          <div class="hist-item"><div class="hist-icon bg-green">💰</div><div class="hist-body"><div class="ht">Vente huile d'olive</div><div class="hs">30/03/2026</div></div><div class="hist-val green">+64 000</div></div>
+          <div class="hist-item"><div class="hist-icon" style="background:#fdeee">💸</div><div class="hist-body"><div class="ht">Main-d'œuvre</div><div class="hs">28/03/2026</div></div><div class="hist-val red">-1 500</div></div>
+          <div class="hist-item"><div class="hist-icon bg-green">🤝</div><div class="hist-body"><div class="ht">Vente agneaux</div><div class="hs">25/03/2026</div></div><div class="hist-val red">×3</div></div>
+          <div class="hist-item"><div class="hist-icon" style="background:#fdeee">💸</div><div class="hist-body"><div class="ht">Trituration</div><div class="hs">20/11/2025</div></div><div class="hist-val red">-2 100</div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PAGE 5 : Aïd -->
+    <div class="page" id="p5">
+      <div class="screen-content" style="padding-top:16px">
+        <div class="section-title"><h2>🏷 Ventes Aïd</h2><p>Gestion des moutons pour l'Aïd Al-Adha</p></div>
+        <div class="fin-row">
+          <div class="fin-card"><div class="val" style="color:#e68e00">24</div><div class="lbl">Moutons dispo</div></div>
+          <div class="fin-card"><div class="val green">18 000 MAD</div><div class="lbl">Revenus Aïd</div></div>
+        </div>
+        <button class="add-btn">＋ Ajouter un mouton Aïd</button>
+        <div class="app-card">
+          <div class="card-title">🐑 MOUTONS DISPONIBLES</div>
+          <div class="hist-item"><div class="hist-icon" style="background:#fff5e7">🐑</div><div class="hist-body"><div class="ht">Bélier n°14 — 3 ans</div><div class="hs">Poids estimé 45 kg</div></div><div><div style="font-size:13px;font-weight:900;color:#e68e00">2 200 MAD</div><div style="font-size:11px;color:#8aa095">Disponible</div></div></div>
+          <div class="hist-item"><div class="hist-icon" style="background:#fff5e7">🐑</div><div class="hist-body"><div class="ht">Bélier n°08 — 2 ans</div><div class="hs">Poids estimé 38 kg</div></div><div><div style="font-size:13px;font-weight:900;color:#e68e00">1 800 MAD</div><div style="font-size:11px;color:#8aa095">Disponible</div></div></div>
+          <div class="hist-item"><div class="hist-icon" style="background:#eaf7f0">🐑</div><div class="hist-body"><div class="ht">Bélier n°22 — 4 ans</div><div class="hs">Vendu le 01/04/2026</div></div><div><div style="font-size:13px;font-weight:900;color:#245c3d">2 500 MAD</div><div style="font-size:11px;color:#245c3d">✅ Vendu</div></div></div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /screen -->
+
+  <!-- Bottom Nav -->
+  <nav class="nav">
+    <button class="nav-item active" onclick="goTo(0,this)">
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 13h1v7c0 .6.4 1 1 1h4v-6h6v6h4c.6 0 1-.4 1-1v-7h1l-9-9-9 9z"/></svg>
+      <span>Accueil</span>
+    </button>
+    <button class="nav-item" onclick="goTo(1,this)">
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M17 8C8 10 5.9 16.2 3.2 21.4L5 22l1-2c.8.5 1.6.9 2.5.9C11 21 11 18 14 18s3 3 6 3v-2c-2 0-2-3-5-3-1.2 0-2.1.4-3 .9C13.3 14 16 10 21 9l-4-1z"/></svg>
+      <span>Cultures</span>
+    </button>
+    <button class="nav-item" onclick="goTo(2,this)">
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg>
+      <span>Équipe</span>
+    </button>
+    <button class="nav-item" onclick="goTo(3,this)">
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M4.5 6.375a4.125 4.125 0 118.25 0 4.125 4.125 0 01-8.25 0zM14.25 8.625a3.375 3.375 0 116.75 0 3.375 3.375 0 01-6.75 0zM1.5 19.125a7.125 7.125 0 0114.25 0v.003l-.001.119a.75.75 0 01-.363.63 13.067 13.067 0 01-6.761 1.873c-2.472 0-4.786-.684-6.76-1.873a.75.75 0 01-.364-.63l-.001-.122zM17.25 19.128l-.001.144a2.25 2.25 0 01-.233.96 10.088 10.088 0 005.06-1.01.75.75 0 00.42-.643 4.875 4.875 0 00-6.957-4.611 8.586 8.586 0 011.71 5.157v.003z"/></svg>
+      <span>Cheptel</span>
+    </button>
+    <button class="nav-item" onclick="goTo(4,this)">
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M21 18v1c0 1.1-.9 2-2 2H5c-1.11 0-2-.9-2-2V5c0-1.1.89-2 2-2h14c1.1 0 2 .9 2 2v1h-9c-1.11 0-2 .9-2 2v8c0 1.1.89 2 2 2h9zm-9-2h10V8H12v8zm4-2.5c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5z"/></svg>
+      <span>Finances</span>
+    </button>
+    <button class="nav-item" onclick="goTo(5,this)">
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M21.41 11.58l-9-9C12.05 2.22 11.55 2 11 2H4c-1.1 0-2 .9-2 2v7c0 .55.22 1.05.59 1.42l9 9c.36.36.86.58 1.41.58.55 0 1.05-.22 1.41-.59l7-7c.37-.36.59-.86.59-1.41 0-.55-.23-1.06-.59-1.42zM5.5 7C4.67 7 4 6.33 4 5.5S4.67 4 5.5 4 7 4.67 7 5.5 6.33 7 5.5 7z"/></svg>
+      <span>Aïd</span>
+    </button>
+  </nav>
+</div>
+
+<!-- Bottom sheets -->
+
+<!-- Revenus sheet -->
+<div class="sheet-overlay" id="rev-sheet" onclick="closeSheet(event,'rev-sheet')">
+  <div class="sheet" onclick="event.stopPropagation()">
+    <div class="sheet-handle"></div>
+    <h3 style="color:#1b7a46">💰 Ajouter un revenu</h3>
+    <div class="form-label">FERME</div>
+    <div class="ferme-toggle"><button class="ft-btn sel">🐑 Rhamna</button><button class="ft-btn" onclick="toggleFerme(this)">🫒 Srahna</button></div>
+    <div class="form-row">
+      <div><div class="form-label">MONTANT (MAD)</div><input class="form-field" style="margin:0" placeholder="0.00" type="number"></div>
+      <div><div class="form-label">DATE</div><input class="form-field" style="margin:0" type="date" value="2026-04-06"></div>
+    </div>
+    <div class="form-label">CATÉGORIE</div>
+    <select class="form-field">
+      <option>Vente bétail</option>
+      <option>Vente huile d'olive</option>
+      <option>Vente luzerne</option>
+      <option>Vente fruits</option>
+      <option>Subvention</option>
+      <option>Autre revenu</option>
+    </select>
+    <div class="form-label">REMARQUE</div>
+    <textarea class="form-field" rows="2" placeholder="Détail optionnel"></textarea>
+    <button class="add-btn" style="margin-top:8px;background:linear-gradient(135deg,#1b7a46,#2da865)" onclick="closeSheet(event,'rev-sheet')">✓ Enregistrer le revenu</button>
+    <button style="width:100%;background:none;border:none;padding:10px;font-size:14px;font-weight:800;color:#8aa095;cursor:pointer;font-family:'Cairo',sans-serif" onclick="closeSheet(event,'rev-sheet')">Annuler</button>
+  </div>
+</div>
+
+<!-- Dépenses sheet -->
+<div class="sheet-overlay" id="dep-sheet" onclick="closeSheet(event,'dep-sheet')">
+  <div class="sheet" onclick="event.stopPropagation()">
+    <div class="sheet-handle"></div>
+    <h3 style="color:#b5192e">💸 Ajouter une dépense</h3>
+    <div class="form-label">FERME</div>
+    <div class="ferme-toggle"><button class="ft-btn sel">🐑 Rhamna</button><button class="ft-btn" onclick="toggleFerme(this)">🫒 Srahna</button></div>
+    <div class="form-row">
+      <div><div class="form-label">MONTANT (MAD)</div><input class="form-field" style="margin:0" placeholder="0.00" type="number"></div>
+      <div><div class="form-label">DATE</div><input class="form-field" style="margin:0" type="date" value="2026-04-06"></div>
+    </div>
+    <div class="form-label">CATÉGORIE</div>
+    <select class="form-field">
+      <option>Alimentation bétail</option>
+      <option>Vétérinaire</option>
+      <option>Engrais / produits</option>
+      <option>Matériel / outillage</option>
+      <option>Main-d'œuvre</option>
+      <option>Trituration</option>
+      <option>Transport</option>
+      <option>Eau / électricité</option>
+      <option>Autre dépense</option>
+    </select>
+    <div class="form-label">REMARQUE</div>
+    <textarea class="form-field" rows="2" placeholder="Détail optionnel"></textarea>
+    <button class="add-btn red" style="margin-top:8px;background:linear-gradient(135deg,#b5192e,#e02040)" onclick="closeSheet(event,'dep-sheet')">✓ Enregistrer la dépense</button>
+    <button style="width:100%;background:none;border:none;padding:10px;font-size:14px;font-weight:800;color:#8aa095;cursor:pointer;font-family:'Cairo',sans-serif" onclick="closeSheet(event,'dep-sheet')">Annuler</button>
+  </div>
+</div>
+
+<div class="sheet-overlay" id="sheet-recolte" onclick="closeSheet(event,'sheet-recolte')">
+  <div class="sheet" onclick="event.stopPropagation()">
+    <div class="sheet-handle"></div>
+    <h3>🌾 Enregistrer une récolte</h3>
+    <div class="form-label">CULTURE</div>
+    <select class="form-field"><option>🫒 Olives</option><option>🍋 Citrons</option><option>🍑 Figues</option><option>🌿 Luzerne</option><option>🍎 Fruits divers</option><option>🌱 Autre</option></select>
+    <div class="ferme-toggle"><button class="ft-btn sel">🐑 Rhamna</button><button class="ft-btn" onclick="toggleFerme(this)">🫒 Srahna</button></div>
+    <div class="form-row"><input class="form-field" style="margin:0" placeholder="Quantité (kg) *" type="number"><input class="form-field" style="margin:0" type="date" value="2025-11-15"></div>
+    <div class="form-row"><input class="form-field" style="margin:0" placeholder="Qté vendue (opt.)"><input class="form-field" style="margin:0" placeholder="Qté interne (opt.)"></div>
+    <div class="form-row">
+      <input class="form-field" style="margin:0" placeholder="Remarque (opt.)">
+      <select class="form-field" style="margin:0"><option>2024</option><option>2025</option><option selected>2026</option></select>
+    </div>
+    <button class="add-btn" style="margin-top:8px" onclick="closeSheet(event,'sheet-recolte')">Enregistrer</button>
+  </div>
+</div>
+
+<div class="sheet-overlay" id="sheet-trit" onclick="closeSheet(event,'sheet-trit')">
+  <div class="sheet" onclick="event.stopPropagation()">
+    <div class="sheet-handle"></div>
+    <h3>🫒 Enregistrer une trituration</h3>
+    <div class="ferme-toggle"><button class="ft-btn sel">🐑 Rhamna</button><button class="ft-btn" onclick="toggleFerme(this)">🫒 Srahna</button></div>
+    <div class="form-row"><select class="form-field" style="margin:0"><option>2024</option><option selected>2025</option><option>2026</option></select><input class="form-field" style="margin:0" type="date" value="2025-11-20"></div>
+    <div class="section-sep">OLIVES &amp; HUILE</div>
+    <div class="form-row"><input class="form-field" style="margin:0" placeholder="Kg olives *" value="8400"><input class="form-field" style="margin:0" placeholder="Litres huile *" value="1092"></div>
+    <input class="form-field" placeholder="Coût trituration MAD (opt.)" value="2100">
+    <div class="section-sep">DISTRIBUTION HUILE</div>
+    <div class="form-row"><input class="form-field" style="margin:0" placeholder="Litres vendus" value="800"><input class="form-field" style="margin:0" placeholder="Prix / litre MAD" value="80"></div>
+    <div class="form-row"><input class="form-field" style="margin:0" placeholder="Litres famille" value="150"><input class="form-field" style="margin:0" placeholder="Litres héritiers" value="142"></div>
+    <button class="add-btn" style="margin-top:8px" onclick="closeSheet(event,'sheet-trit')">Enregistrer</button>
+  </div>
+</div>
+
+<div class="sheet-overlay" id="sheet-recurring" onclick="closeSheet(event,'sheet-recurring')">
+  <div class="sheet" onclick="event.stopPropagation()">
+    <div class="sheet-handle"></div>
+    <h3>👥 Ajouter un salarié fixe</h3>
+    <p style="font-size:12px;color:#8aa095;font-weight:700;margin-bottom:16px">Le bouton "Payer" apparaîtra chaque semaine</p>
+    <input class="form-field" placeholder="Nom du salarié *">
+    <input class="form-field" placeholder="Salaire hebdomadaire MAD *" type="number">
+    <div class="ferme-toggle"><button class="ft-btn sel">🐑 Rhamna</button><button class="ft-btn" onclick="toggleFerme(this)">🫒 Srahna</button></div>
+    <button class="add-btn" style="margin-top:8px" onclick="closeSheet(event,'sheet-recurring')">Enregistrer</button>
+  </div>
+</div>
+
+<div class="sheet-overlay" id="sheet-session" onclick="closeSheet(event,'sheet-session')">
+  <div class="sheet" onclick="event.stopPropagation()">
+    <div class="sheet-handle"></div>
+    <h3>🌾 Enregistrer une session travail</h3>
+    <input class="form-field" placeholder="Nom du travailleur *">
+    <div class="form-row"><input class="form-field" style="margin:0" placeholder="Nb jours *" type="number"><input class="form-field" style="margin:0" placeholder="Salaire/jour MAD *" type="number"></div>
+    <div class="ferme-toggle"><button class="ft-btn sel">🐑 Rhamna</button><button class="ft-btn" onclick="toggleFerme(this)">🫒 Srahna</button></div>
+    <input class="form-field" type="date" value="2026-04-06">
+    <input class="form-field" placeholder="Remarque (opt.)">
+    <button class="add-btn" style="margin-top:8px" onclick="closeSheet(event,'sheet-session')">Enregistrer</button>
+  </div>
+</div>
+
+<script>
+function goTo(idx, btn) {
+  document.querySelectorAll('.page').forEach((p,i)=> p.classList.toggle('active', i===idx));
+  document.querySelectorAll('.nav-item').forEach(b=> b.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('screen').scrollTop = 0;
+}
+function switchCultureTab(idx, tab) {
+  document.querySelectorAll('#p1 .tab').forEach((t,i)=> t.classList.toggle('active', i===idx));
+  document.getElementById('cult0').style.display = idx===0 ? 'block' : 'none';
+  document.getElementById('cult1').style.display = idx===1 ? 'block' : 'none';
+}
+function switchFinTab(idx, tab) {
+  document.querySelectorAll('#p4 .tab').forEach((t,i)=> t.classList.toggle('active', i===idx));
+  ['fin0','fin1','fin2'].forEach((id,i)=> document.getElementById(id).style.display = i===idx ? 'block' : 'none');
+}
+function openSheet(id) {
+  document.getElementById(id).classList.add('open');
+}
+function closeSheet(e, id) {
+  document.getElementById(id).classList.remove('open');
+}
+function toggleFerme(btn) {
+  const parent = btn.closest('.ferme-toggle');
+  parent.querySelectorAll('.ft-btn').forEach(b=> b.classList.remove('sel'));
+  btn.classList.add('sel');
+}
+</script>
+</body>
+</html>
