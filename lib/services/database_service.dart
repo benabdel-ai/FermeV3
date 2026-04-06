@@ -6,6 +6,7 @@ import 'package:uuid/uuid.dart';
 
 import '../models/ferme_models.dart';
 import '../models/models.dart';
+import 'seed_data.dart';
 
 class DatabaseService {
   DatabaseService._();
@@ -64,6 +65,7 @@ class DatabaseService {
         await _createFermeTables(database);
         await _createCategoriesTable(database);
         await _seedCategories(database);
+        await seedHistoricalData(database);
       },
       onUpgrade: (database, oldVersion, newVersion) async {
         if (oldVersion < 2) {
