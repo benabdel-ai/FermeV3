@@ -4,7 +4,6 @@ import 'package:intl/date_symbol_data_local.dart';
 import 'package:provider/provider.dart';
 
 import 'providers/app_provider.dart';
-import 'screens/aid_sales_screen.dart';
 import 'screens/cultures_screen.dart';
 import 'screens/equipe_screen.dart';
 import 'screens/screens.dart';
@@ -63,7 +62,6 @@ class _HomeScreenState extends State<HomeScreen> {
     EquipeScreen(),
     CheptelScreen(),
     FinancesScreen(),
-    AidSalesScreen(),
   ];
 
   static const List<String> _labels = <String>[
@@ -72,7 +70,6 @@ class _HomeScreenState extends State<HomeScreen> {
     'Équipe',
     'Cheptel',
     'Finances',
-    'Aïd',
   ];
 
   static const List<IconData> _icons = <IconData>[
@@ -81,7 +78,6 @@ class _HomeScreenState extends State<HomeScreen> {
     Icons.people_rounded,
     Icons.pets_rounded,
     Icons.account_balance_wallet_rounded,
-    Icons.sell_rounded,
   ];
 
   @override

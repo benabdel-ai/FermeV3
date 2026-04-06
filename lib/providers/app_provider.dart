@@ -17,7 +17,6 @@ class AppProvider extends ChangeNotifier {
   List<Mouvement> mouvements = <Mouvement>[];
   List<Depense> depenses = <Depense>[];
   List<Revenu> revenus = <Revenu>[];
-  List<AidMouton> aidMoutons = <AidMouton>[];
   List<Recolte> recoltes = <Recolte>[];
   List<Trituration> triturations = <Trituration>[];
   List<TravailleurSession> travailleurSessions = <TravailleurSession>[];
@@ -42,7 +41,6 @@ class AppProvider extends ChangeNotifier {
     mouvements = await _db.getMouvements();
     depenses = await _db.getDepenses();
     revenus = await _db.getRevenus();
-    aidMoutons = await _db.getAidMoutons();
     recoltes = await _db.getRecoltes();
     triturations = await _db.getTriturations();
     travailleurSessions = await _db.getTravailleurSessions();
@@ -102,10 +100,7 @@ class AppProvider extends ChangeNotifier {
       depensesFiltrees.fold(0, (sum, item) => sum + item.montant);
 
   double get totalRevenus =>
-      revenusFiltres.fold(0.0, (sum, item) => sum + item.montant) +
-      (fermeFilter != 'srahna'
-          ? aidMoutons.where((m) => m.sold).fold(0.0, (s, m) => s + m.prixVente)
-          : 0.0);
+      revenusFiltres.fold(0.0, (sum, item) => sum + item.montant);
 
   double get bilan => totalRevenus - totalDepenses;
 
@@ -117,19 +112,7 @@ class AppProvider extends ChangeNotifier {
       .where((r) => r.date.year == month.year && r.date.month == month.month)
       .fold(0, (sum, item) => sum + item.montant);
 
-  double ventesAidMois(DateTime month) {
-    if (fermeFilter == 'srahna') return 0;
-    return aidMoutons
-        .where((m) =>
-            m.sold &&
-            m.soldAt != null &&
-            m.soldAt!.year == month.year &&
-            m.soldAt!.month == month.month)
-        .fold(0, (sum, m) => sum + m.prixVente);
-  }
-
-  double revenusGlobauxMois(DateTime month) =>
-      revenusMois(month) + ventesAidMois(month);
+  double revenusGlobauxMois(DateTime month) => revenusMois(month);
 
   List<Map<String, dynamic>> get last6MonthsData {
     final now = DateTime.now();
@@ -220,38 +203,6 @@ class AppProvider extends ChangeNotifier {
   Future<void> updateRevenu(Revenu revenu) async {
     await _db.updateRevenu(revenu);
     revenus = await _db.getRevenus();
-    notifyListeners();
-  }
-
-  // ─── CRUD Aid Moutons ──────────────────────────────────────────────────────
-
-  int get aidTotal => aidMoutons.length;
-  int get aidDisponibles => aidMoutons.where((m) => m.isAvailable).length;
-  int get aidReserves => aidMoutons.where((m) => m.reserved && !m.sold).length;
-  int get aidVendus => aidMoutons.where((m) => m.sold).length;
-  double get aidBeneficeTotal => aidMoutons
-      .where((m) => m.sold && m.prixVente > 0)
-      .fold(0, (sum, item) => sum + item.benefice);
-
-  Future<bool> addAidMouton(AidMouton mouton) async {
-    final exists =
-        aidMoutons.any((m) => m.numero.trim() == mouton.numero.trim());
-    if (exists) return false;
-    await _db.insertAidMouton(mouton);
-    aidMoutons = await _db.getAidMoutons();
-    notifyListeners();
-    return true;
-  }
-
-  Future<void> updateAidMouton(AidMouton mouton) async {
-    await _db.updateAidMouton(mouton);
-    aidMoutons = await _db.getAidMoutons();
-    notifyListeners();
-  }
-
-  Future<void> deleteAidMouton(String id) async {
-    await _db.deleteAidMouton(id);
-    aidMoutons.removeWhere((item) => item.id == id);
     notifyListeners();
   }
 
@@ -422,7 +373,6 @@ class AppProvider extends ChangeNotifier {
     mouvements = <Mouvement>[];
     depenses = <Depense>[];
     revenus = <Revenu>[];
-    aidMoutons = <AidMouton>[];
     recoltes = <Recolte>[];
     triturations = <Trituration>[];
     travailleurSessions = <TravailleurSession>[];
