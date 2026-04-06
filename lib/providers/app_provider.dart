@@ -406,6 +406,8 @@ class AppProvider extends ChangeNotifier {
     await _reloadCategories();
   }
 
+  Future<void> exportDatabase() => _db.exportDatabase();
+
   Future<void> _reloadCategories() async {
     depCategories = await _db.getCategories('depense');
     revCategories = await _db.getCategories('revenu');

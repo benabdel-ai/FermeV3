@@ -640,55 +640,105 @@ class _FinancesScreenState extends State<FinancesScreen> with SingleTickerProvid
   }
 }
 
-class ManagementHubScreen extends StatelessWidget {
+class ManagementHubScreen extends StatefulWidget {
   const ManagementHubScreen({super.key});
+  @override
+  State<ManagementHubScreen> createState() => _ManagementHubScreenState();
+}
+
+class _ManagementHubScreenState extends State<ManagementHubScreen>
+    with SingleTickerProviderStateMixin {
+  late TabController _tab;
+
+  @override
+  void initState() {
+    super.initState();
+    _tab = TabController(length: 3, vsync: this);
+  }
+
+  @override
+  void dispose() {
+    _tab.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Pilotage & parametres')),
-      body: ListView(
-        padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+      appBar: AppBar(
+        title: const Text('Pilotage & Paramètres'),
+        bottom: TabBar(
+          controller: _tab,
+          tabs: const <Tab>[
+            Tab(text: '💸 Dépenses'),
+            Tab(text: '💰 Revenus'),
+            Tab(text: '🌾 Cultures'),
+          ],
+        ),
+      ),
+      body: Column(
         children: <Widget>[
-          const SectionTitle(
-            'Centre de gestion',
-            sub: 'Parametres, modules disponibles et outils d administration',
-          ),
-          const AppCard(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+          // ── Fermes info ──────────────────────────────────────────────────
+          Container(
+            margin: const EdgeInsets.fromLTRB(16, 14, 16, 0),
+            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
+            decoration: BoxDecoration(
+              color: AppColors.bg2,
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: AppColors.border),
+            ),
+            child: Row(
               children: <Widget>[
-                CardTitle('MODULES DISPONIBLES'),
-                _HubTile(emoji: '🐑', title: 'Cheptel', subtitle: 'Mouvements, stock actuel et suivi rapide'),
-                _HubTile(emoji: '', title: 'Depenses', subtitle: 'Saisie mobile, totaux et repartition par categorie'),
-                _HubTile(emoji: '', title: 'Revenus', subtitle: 'Saisie mobile, totaux et repartition par categorie'),
-                _HubTile(emoji: '', title: 'Historique', subtitle: 'Vision chronologique de toutes les operations'),
+                Expanded(child: _FermeInfo(emoji: '🐑', name: 'Ferme Rhamna', desc: 'Moutons · Oliviers · Fassa')),
+                Container(width: 1, height: 44, color: AppColors.border),
+                Expanded(child: _FermeInfo(emoji: '🫒', name: 'Ferme Srahna', desc: 'Oliviers · Luzerne')),
               ],
             ),
           ),
-          const AppCard(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+          const SizedBox(height: 10),
+          // ── Export + Clear ───────────────────────────────────────────────
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Row(
               children: <Widget>[
-                CardTitle('EXTENSIONS DISPONIBLES'),
-                _HubTile(emoji: '', title: 'Multi-fermes', subtitle: 'Ajouter plusieurs fermes et filtrer l ensemble des donnees'),
-                _HubTile(emoji: '', title: 'Agriculture', subtitle: 'Cultures, activites, recoltes et entretien'),
-                _HubTile(emoji: '', title: 'Referentiels', subtitle: 'Categories modifiables et designations frequentes'),
-                _HubTile(emoji: '', title: 'Recurrences', subtitle: 'Depenses et revenus automatiques'),
-                _HubTile(emoji: '', title: 'Exports', subtitle: 'CSV, PDF, sauvegarde et restauration'),
-              ],
-            ),
-          ),
-          AppCard(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                const CardTitle('OUTILS'),
-                AddButton(
-                  label: 'Vider toutes les donnees de demonstration',
-                  onTap: () => _confirmDelete(context, () => context.read<AppProvider>().clearAll()),
-                  color: AppColors.red2,
+                Expanded(
+                  child: _ToolBtn(
+                    emoji: '💾',
+                    label: 'Exporter sauvegarde',
+                    color: AppColors.green2,
+                    onTap: () async {
+                      try {
+                        await context.read<AppProvider>().exportDatabase();
+                      } catch (e) {
+                        if (!context.mounted) return;
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text('Erreur export: $e'), backgroundColor: AppColors.red),
+                        );
+                      }
+                    },
+                  ),
                 ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: _ToolBtn(
+                    emoji: '🗑️',
+                    label: 'Vider les données',
+                    color: AppColors.red2,
+                    onTap: () => _confirmDelete(context, () => context.read<AppProvider>().clearAll()),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 10),
+          // ── Category tabs ────────────────────────────────────────────────
+          Expanded(
+            child: TabBarView(
+              controller: _tab,
+              children: const <Widget>[
+                _CatList(type: 'depense'),
+                _CatList(type: 'revenu'),
+                _CatList(type: 'culture'),
               ],
             ),
           ),
@@ -698,50 +748,196 @@ class ManagementHubScreen extends StatelessWidget {
   }
 }
 
-class _HubTile extends StatelessWidget {
-  const _HubTile({
-    required this.emoji,
-    required this.title,
-    required this.subtitle,
-  });
-
+class _FermeInfo extends StatelessWidget {
+  const _FermeInfo({required this.emoji, required this.name, required this.desc});
   final String emoji;
-  final String title;
-  final String subtitle;
+  final String name;
+  final String desc;
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: <Widget>[
+        Text(emoji, style: const TextStyle(fontSize: 26)),
+        const SizedBox(height: 4),
+        Text(name, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w900, color: AppColors.text)),
+        Text(desc, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: AppColors.text3), textAlign: TextAlign.center),
+      ],
+    );
+  }
+}
+
+class _ToolBtn extends StatelessWidget {
+  const _ToolBtn({required this.emoji, required this.label, required this.color, required this.onTap});
+  final String emoji;
+  final String label;
+  final Color color;
+  final VoidCallback onTap;
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: color,
+      borderRadius: BorderRadius.circular(16),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(16),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 14),
+          child: Column(
+            children: <Widget>[
+              Text(emoji, style: const TextStyle(fontSize: 22)),
+              const SizedBox(height: 4),
+              Text(label, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: Colors.white), textAlign: TextAlign.center),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _CatList extends StatelessWidget {
+  const _CatList({required this.type});
+  final String type;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 10),
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: AppColors.cardSoft,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: AppColors.borderSoft),
-      ),
-      child: Row(
-        children: <Widget>[
-          Container(
-            width: 48,
-            height: 48,
-            decoration: BoxDecoration(color: AppColors.bg2, borderRadius: BorderRadius.circular(16)),
-            child: Center(child: Text(emoji, style: const TextStyle(fontSize: 24))),
+    final provider = context.watch<AppProvider>();
+    final cats = type == 'depense'
+        ? provider.depCategories
+        : type == 'revenu'
+            ? provider.revCategories
+            : provider.cultureCategories;
+
+    return Column(
+      children: <Widget>[
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+          child: SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              onPressed: () => _showCatForm(context, type),
+              icon: const Icon(Icons.add, size: 18),
+              label: const Text('Ajouter une catégorie'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.green2,
+                minimumSize: const Size.fromHeight(50),
+              ),
+            ),
           ),
-          const SizedBox(width: 12),
-          Expanded(
+        ),
+        Expanded(
+          child: cats.isEmpty
+              ? const Center(child: Text('Aucune catégorie', style: TextStyle(color: AppColors.text3)))
+              : ListView.builder(
+                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+                  itemCount: cats.length,
+                  itemBuilder: (ctx, i) {
+                    final cat = cats[i];
+                    return Container(
+                      margin: const EdgeInsets.only(bottom: 8),
+                      decoration: BoxDecoration(
+                        color: AppColors.bg2,
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: AppColors.border),
+                      ),
+                      child: ListTile(
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                        leading: Container(
+                          width: 40, height: 40,
+                          decoration: BoxDecoration(color: AppColors.greenBg, borderRadius: BorderRadius.circular(12)),
+                          child: Center(
+                            child: Text(
+                              type == 'depense' ? '💸' : type == 'revenu' ? '💰' : '🌾',
+                              style: const TextStyle(fontSize: 18),
+                            ),
+                          ),
+                        ),
+                        title: Text(cat.label, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w800)),
+                        trailing: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: <Widget>[
+                            IconButton(
+                              icon: const Icon(Icons.edit_outlined, size: 20, color: AppColors.green2),
+                              onPressed: () => _showCatForm(context, type, existing: cat),
+                            ),
+                            IconButton(
+                              icon: const Icon(Icons.delete_outline, size: 20, color: AppColors.red),
+                              onPressed: () => _confirmDelete(context, () => context.read<AppProvider>().deleteCategory(cat.id)),
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
+                ),
+        ),
+      ],
+    );
+  }
+
+  void _showCatForm(BuildContext context, String type, {AppCategory? existing}) {
+    final ctrl = TextEditingController(text: existing?.label ?? '');
+    final emoji = type == 'depense' ? '💸' : type == 'revenu' ? '💰' : '🌾';
+    final title = existing == null ? 'Ajouter catégorie $emoji' : 'Modifier catégorie $emoji';
+
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => Padding(
+        padding: EdgeInsets.only(bottom: MediaQuery.of(ctx).viewInsets.bottom),
+        child: Container(
+          decoration: const BoxDecoration(
+            color: AppColors.bg2,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+          ),
+          padding: const EdgeInsets.fromLTRB(20, 12, 20, 28),
+          child: SafeArea(
+            top: false,
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
               children: <Widget>[
-                Text(title, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w900, color: AppColors.text)),
-                const SizedBox(height: 2),
-                Text(
-                  subtitle,
-                  style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: AppColors.text2),
+                Container(width: 40, height: 4, decoration: BoxDecoration(color: AppColors.border, borderRadius: BorderRadius.circular(2))),
+                const SizedBox(height: 16),
+                Text(title, style: const TextStyle(fontSize: 19, fontWeight: FontWeight.w900, color: AppColors.green2)),
+                const SizedBox(height: 20),
+                TextField(
+                  controller: ctrl,
+                  autofocus: true,
+                  decoration: InputDecoration(
+                    labelText: 'Nom de la catégorie',
+                    hintText: 'Ex: Vente Fassa',
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(16)),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: () async {
+                      final label = ctrl.text.trim();
+                      if (label.isEmpty) return;
+                      final provider = context.read<AppProvider>();
+                      if (existing == null) {
+                        final cats = type == 'depense' ? provider.depCategories : type == 'revenu' ? provider.revCategories : provider.cultureCategories;
+                        await provider.addCategory(AppCategory(type: type, label: label, ordre: cats.length));
+                      } else {
+                        await provider.updateCategory(AppCategory(id: existing.id, type: type, label: label, ordre: existing.ordre));
+                      }
+                      if (ctx.mounted) Navigator.pop(ctx);
+                    },
+                    style: ElevatedButton.styleFrom(backgroundColor: AppColors.green2, minimumSize: const Size.fromHeight(54)),
+                    child: Text(existing == null ? 'Ajouter' : 'Enregistrer'),
+                  ),
+                ),
+                TextButton(
+                  onPressed: () => Navigator.pop(ctx),
+                  child: const Text('Annuler', style: TextStyle(color: AppColors.text3, fontWeight: FontWeight.w700)),
                 ),
               ],
             ),
           ),
-        ],
+        ),
       ),
     );
   }

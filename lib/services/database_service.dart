@@ -1,6 +1,9 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:path/path.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:share_plus/share_plus.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:uuid/uuid.dart';
 
@@ -190,6 +193,20 @@ class DatabaseService {
     for (int i = 0; i < cultCats.length; i++) {
       await database.insert('categories', {'id': uuid.v4(), 'type': 'culture', 'label': cultCats[i], 'ordre': i}, conflictAlgorithm: ConflictAlgorithm.ignore);
     }
+  }
+
+  // ─── Export / Sauvegarde ──────────────────────────────────────────────────
+
+  Future<void> exportDatabase() async {
+    final dbPath = join(await getDatabasesPath(), 'troupeau_ovins.db');
+    final dir = await getTemporaryDirectory();
+    final now = DateTime.now();
+    final stamp = '${now.year}${now.month.toString().padLeft(2,'0')}${now.day.toString().padLeft(2,'0')}_${now.hour.toString().padLeft(2,'0')}${now.minute.toString().padLeft(2,'0')}';
+    final exportPath = join(dir.path, 'MaFerme_backup_$stamp.db');
+    await File(dbPath).copy(exportPath);
+    await SharePlus.instance.share(
+      ShareParams(files: [XFile(exportPath)], text: 'Sauvegarde Ma Ferme Pro — $stamp'),
+    );
   }
 
   // ─── Mouvements ────────────────────────────────────────────────────────────
