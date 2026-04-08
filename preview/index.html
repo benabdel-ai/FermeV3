@@ -244,9 +244,9 @@
           <div class="kpi-card"><div class="emoji-box">🐣</div><div class="val">22</div><div class="lbl">Agneaux ♂</div></div>
         </div>
         <div class="fin-row">
-          <div class="fin-card"><div class="val red">4 200 MAD</div><div class="lbl">Dépenses mois</div></div>
-          <div class="fin-card"><div class="val green">6 800 MAD</div><div class="lbl">Revenus mois</div></div>
-          <div class="fin-card"><div class="val green">2 600 MAD</div><div class="lbl">Bilan +</div></div>
+          <div class="fin-card"><div class="val red">125 656 MAD</div><div class="lbl">Dépenses mois</div></div>
+          <div class="fin-card"><div class="val green">4 500 MAD</div><div class="lbl">Revenus mois</div></div>
+          <div class="fin-card"><div class="val green">261 016 MAD</div><div class="lbl">Bilan global +</div></div>
         </div>
         <div class="quick-title">RACCOURCIS RAPIDES</div>
         <div class="quick-grid">
@@ -561,20 +561,49 @@
       </div>
     </div>
 
-    <!-- PAGE 5 : Aïd -->
+    <!-- PAGE 5 : Pilotage -->
     <div class="page" id="p5">
-      <div class="screen-content" style="padding-top:16px">
-        <div class="section-title"><h2>🏷 Ventes Aïd</h2><p>Gestion des moutons pour l'Aïd Al-Adha</p></div>
-        <div class="fin-row">
-          <div class="fin-card"><div class="val" style="color:#e68e00">24</div><div class="lbl">Moutons dispo</div></div>
-          <div class="fin-card"><div class="val green">18 000 MAD</div><div class="lbl">Revenus Aïd</div></div>
+      <div style="background:#fff;border-bottom:1px solid #e7efea;padding:12px 16px 0">
+        <div style="display:flex;gap:0;border-bottom:1px solid #e7efea">
+          <button onclick="switchPilotTab(0,this)" style="flex:1;padding:12px 4px;font-size:12px;font-weight:800;color:#245c3d;border:none;background:none;border-bottom:2px solid #245c3d;font-family:'Cairo',sans-serif;cursor:pointer" id="ptab0">💸 Dépenses</button>
+          <button onclick="switchPilotTab(1,this)" style="flex:1;padding:12px 4px;font-size:12px;font-weight:700;color:#8aa095;border:none;background:none;border-bottom:2px solid transparent;font-family:'Cairo',sans-serif;cursor:pointer" id="ptab1">💰 Revenus</button>
+          <button onclick="switchPilotTab(2,this)" style="flex:1;padding:12px 4px;font-size:12px;font-weight:700;color:#8aa095;border:none;background:none;border-bottom:2px solid transparent;font-family:'Cairo',sans-serif;cursor:pointer" id="ptab2">🌾 Cultures</button>
         </div>
-        <button class="add-btn">＋ Ajouter un mouton Aïd</button>
-        <div class="app-card">
-          <div class="card-title">🐑 MOUTONS DISPONIBLES</div>
-          <div class="hist-item"><div class="hist-icon" style="background:#fff5e7">🐑</div><div class="hist-body"><div class="ht">Bélier n°14 — 3 ans</div><div class="hs">Poids estimé 45 kg</div></div><div><div style="font-size:13px;font-weight:900;color:#e68e00">2 200 MAD</div><div style="font-size:11px;color:#8aa095">Disponible</div></div></div>
-          <div class="hist-item"><div class="hist-icon" style="background:#fff5e7">🐑</div><div class="hist-body"><div class="ht">Bélier n°08 — 2 ans</div><div class="hs">Poids estimé 38 kg</div></div><div><div style="font-size:13px;font-weight:900;color:#e68e00">1 800 MAD</div><div style="font-size:11px;color:#8aa095">Disponible</div></div></div>
-          <div class="hist-item"><div class="hist-icon" style="background:#eaf7f0">🐑</div><div class="hist-body"><div class="ht">Bélier n°22 — 4 ans</div><div class="hs">Vendu le 01/04/2026</div></div><div><div style="font-size:13px;font-weight:900;color:#245c3d">2 500 MAD</div><div style="font-size:11px;color:#245c3d">✅ Vendu</div></div></div>
+      </div>
+      <div class="screen-content" style="padding-top:12px">
+        <!-- Fermes + outils -->
+        <div style="background:#fff;border-radius:20px;border:1px solid #e7efea;padding:14px;margin-bottom:10px;display:flex;align-items:center">
+          <div style="flex:1;text-align:center"><div style="font-size:22px">🐑</div><div style="font-size:12px;font-weight:900;color:#16231c">Ferme Rhamna</div><div style="font-size:10px;font-weight:700;color:#8aa095">Moutons · Oliviers · Fassa</div></div>
+          <div style="width:1px;height:50px;background:#e7efea"></div>
+          <div style="flex:1;text-align:center"><div style="font-size:22px">🫒</div><div style="font-size:12px;font-weight:900;color:#16231c">Ferme Srahna</div><div style="font-size:10px;font-weight:700;color:#8aa095">Oliviers · Luzerne</div></div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">
+          <button style="background:linear-gradient(135deg,#245c3d,#3baa74);border:none;border-radius:16px;padding:14px 8px;cursor:pointer;font-family:'Cairo',sans-serif;display:flex;flex-direction:column;align-items:center;gap:4px">
+            <span style="font-size:20px">💾</span><span style="font-size:11px;font-weight:900;color:#fff">Exporter sauvegarde</span>
+          </button>
+          <button style="background:linear-gradient(135deg,#b5192e,#e02040);border:none;border-radius:16px;padding:14px 8px;cursor:pointer;font-family:'Cairo',sans-serif;display:flex;flex-direction:column;align-items:center;gap:4px">
+            <span style="font-size:20px">🗑️</span><span style="font-size:11px;font-weight:900;color:#fff">Vider les données</span>
+          </button>
+        </div>
+        <!-- Cat list -->
+        <button class="add-btn" style="height:46px;font-size:13px">＋ Ajouter une catégorie</button>
+        <div id="pilot-dep" class="pilot-panel">
+          <div class="app-card" style="padding:10px 14px">
+            <div class="card-title">CATÉGORIES DÉPENSES (21)</div>
+            <div id="dep-cats"></div>
+          </div>
+        </div>
+        <div id="pilot-rev" class="pilot-panel" style="display:none">
+          <div class="app-card" style="padding:10px 14px">
+            <div class="card-title">CATÉGORIES REVENUS (15)</div>
+            <div id="rev-cats"></div>
+          </div>
+        </div>
+        <div id="pilot-cult" class="pilot-panel" style="display:none">
+          <div class="app-card" style="padding:10px 14px">
+            <div class="card-title">CATÉGORIES CULTURES (7)</div>
+            <div id="cult-cats"></div>
+          </div>
         </div>
       </div>
     </div>
@@ -604,8 +633,8 @@
       <span>Finances</span>
     </button>
     <button class="nav-item" onclick="goTo(5,this)">
-      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M21.41 11.58l-9-9C12.05 2.22 11.55 2 11 2H4c-1.1 0-2 .9-2 2v7c0 .55.22 1.05.59 1.42l9 9c.36.36.86.58 1.41.58.55 0 1.05-.22 1.41-.59l7-7c.37-.36.59-.86.59-1.41 0-.55-.23-1.06-.59-1.42zM5.5 7C4.67 7 4 6.33 4 5.5S4.67 4 5.5 4 7 4.67 7 5.5 6.33 7 5.5 7z"/></svg>
-      <span>Aïd</span>
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 17v2h6v-2H3zM3 5v2h10V5H3zm10 16v-2h8v-2h-8v-2h-2v6h2zM7 9v2H3v2h4v2h2V9H7zm14 4v-2H11v2h10zm-6-4h2V7h4V5h-4V3h-2v6z"/></svg>
+      <span>Pilotage</span>
     </button>
   </nav>
 </div>
@@ -754,6 +783,36 @@ function toggleFerme(btn) {
   parent.querySelectorAll('.ft-btn').forEach(b=> b.classList.remove('sel'));
   btn.classList.add('sel');
 }
+function switchPilotTab(idx, btn) {
+  ['pilot-dep','pilot-rev','pilot-cult'].forEach((id,i)=>{
+    document.getElementById(id).style.display = i===idx ? 'block' : 'none';
+  });
+  ['ptab0','ptab1','ptab2'].forEach((id,i)=>{
+    const el = document.getElementById(id);
+    el.style.color = i===idx ? '#245c3d' : '#8aa095';
+    el.style.fontWeight = i===idx ? '800' : '700';
+    el.style.borderBottom = i===idx ? '2px solid #245c3d' : '2px solid transparent';
+  });
+}
+
+// Populate categories
+const depCats = ['Alimentation bétail','Vétérinaire','Transport','Achat bétail',"Main-d'œuvre",'Équipement','Eau / Électricité','Trituration','Engrais / Produits','Aïd','Carburant','Location','Infrastructure','Matériel','Produits agricoles','Travaux agricoles','Réparations','Zakat/Partage','Location Tracteur','Récolte Jenyane','Autre'];
+const revCats = ['Vente bétail','Vente Aïd','Vente Fassa','Vente Hendya','Vente Chemkar',"Vente Huile d'olive",'Vente Olives','Vente Olives/Huile','Vente Kharoub','Vente Ferraille','Vente Fruits','Vente Divers','Ventes Srahna','Location Tracteur','Autre'];
+const cultCats = ['Olives',"Huile d'olive",'Citrons','Figues','Fruits divers','Luzerne','Autre'];
+
+function renderCats(cats, containerId, emoji) {
+  const el = document.getElementById(containerId);
+  el.innerHTML = cats.map(c => `
+    <div style="display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid #f0f5f2">
+      <div style="width:36px;height:36px;background:#eaf7f0;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0">${emoji}</div>
+      <span style="flex:1;font-size:13px;font-weight:800;color:#16231c">${c}</span>
+      <button style="background:none;border:none;cursor:pointer;font-size:16px;padding:4px">✏️</button>
+      <button style="background:none;border:none;cursor:pointer;font-size:16px;padding:4px">🗑️</button>
+    </div>`).join('');
+}
+renderCats(depCats, 'dep-cats', '💸');
+renderCats(revCats, 'rev-cats', '💰');
+renderCats(cultCats, 'cult-cats', '🌾');
 </script>
 </body>
 </html>

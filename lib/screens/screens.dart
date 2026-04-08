@@ -10,22 +10,76 @@ import '../widgets/form_sheet.dart';
 import '../widgets/widgets.dart';
 import 'rapports_screen.dart';
 
-class DashboardScreen extends StatelessWidget {
+class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
+
+  @override
+  State<DashboardScreen> createState() => _DashboardScreenState();
+}
+
+class _DashboardScreenState extends State<DashboardScreen> {
+  String _reportType = 'depenses';
+  String _periode = 'mensuel';
+  int _mois = DateTime.now().month;
+  int _annee = DateTime.now().year;
+
+  List<dynamic> _filterItems(List<dynamic> items) {
+    final now = DateTime.now();
+    switch (_periode) {
+      case 'mensuel':
+        return items.where((item) => (item.date as DateTime).year == _annee && (item.date as DateTime).month == _mois).toList();
+      case 'annuel':
+        return items.where((item) => (item.date as DateTime).year == _annee).toList();
+      case 'hebdo':
+        final startOfWeek = DateTime(now.year, now.month, now.day - (now.weekday - 1));
+        return items.where((item) => !(item.date as DateTime).isBefore(startOfWeek)).toList();
+      default:
+        return items;
+    }
+  }
+
+  Map<String, double> _groupByCategorie(List<dynamic> items) {
+    final result = <String, double>{};
+    for (final item in items) {
+      final cat = item.categorie as String;
+      final montant = (item.montant as num).toDouble();
+      result[cat] = (result[cat] ?? 0) + montant;
+    }
+    return Map.fromEntries(result.entries.toList()..sort((a, b) => b.value.compareTo(a.value)));
+  }
 
   @override
   Widget build(BuildContext context) {
     final provider = context.watch<AppProvider>();
     final stock = provider.stock;
     final now = DateTime.now();
-    final depenses = provider.depensesMois(now);
-    final revenus = provider.revenusGlobauxMois(now);
-    final bilan = revenus - depenses;
     final monthName = DateFormat('MMMM yyyy', 'fr_FR').format(now);
 
-    final recentMouvements = provider.mouvements.reversed.take(5).toList();
-    final recentDepenses = provider.depensesFiltrees.take(3).toList();
-    final recentRevenus = provider.revenusFiltres.take(3).toList();
+    // Finance totals — always global (all farms)
+    final allDep = provider.depenses;
+    final allRev = provider.revenus;
+    final depMois = allDep.where((d) => d.date.year == now.year && d.date.month == now.month).fold(0.0, (s, d) => s + d.montant);
+    final revMois = allRev.where((r) => r.date.year == now.year && r.date.month == now.month).fold(0.0, (s, r) => s + r.montant);
+    final soldeMois = revMois - depMois;
+    final bilanTotal = allRev.fold(0.0, (s, r) => s + r.montant) - allDep.fold(0.0, (s, d) => s + d.montant);
+
+    // Report data — always global
+    final reportSource = _reportType == 'depenses' ? allDep : allRev;
+    final reportFiltered = _filterItems(reportSource);
+    final reportTotal = reportFiltered.fold(0.0, (s, item) => s + (item.montant as num).toDouble());
+    final reportByCategorie = _groupByCategorie(reportFiltered);
+    final reportColor = _reportType == 'depenses' ? AppColors.red : AppColors.green2;
+
+    // Available years for dropdowns
+    final yearSet = <int>{now.year};
+    for (final d in allDep) yearSet.add(d.date.year);
+    for (final r in allRev) yearSet.add(r.date.year);
+    final years = yearSet.toList()..sort();
+
+    // Recent items
+    final recentMouvements = provider.mouvements.reversed.take(4).toList();
+    final recentDepenses = provider.depensesFiltrees.take(2).toList();
+    final recentRevenus = provider.revenusFiltres.take(2).toList();
 
     return SingleChildScrollView(
       padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
@@ -34,6 +88,7 @@ class DashboardScreen extends StatelessWidget {
         children: <Widget>[
           const FermeFilterBar(),
           const SizedBox(height: 4),
+          // ── Action buttons ─────────────────────────────────────────────
           Row(
             children: <Widget>[
               Expanded(
@@ -58,128 +113,207 @@ class DashboardScreen extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 14),
-          SectionTitle('Tableau de bord', sub: monthName),
+
+          // ── Finance hero card ──────────────────────────────────────────
           Container(
             width: double.infinity,
             margin: const EdgeInsets.only(bottom: 14),
-            padding: const EdgeInsets.fromLTRB(22, 22, 22, 24),
+            padding: const EdgeInsets.fromLTRB(20, 20, 20, 20),
             decoration: BoxDecoration(
               gradient: const LinearGradient(
-                colors: <Color>[Color(0xFF256F49), Color(0xFF3BAA74)],
+                colors: <Color>[Color(0xFF1A3A5C), Color(0xFF2562A0)],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
               borderRadius: BorderRadius.circular(26),
             ),
-            child: Stack(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: <Widget>[
-                const Positioned(
-                  right: 0,
-                  top: 0,
-                  child: Text('🐑', style: TextStyle(fontSize: 80, color: Colors.white24)),
+                Text(
+                  monthName.toUpperCase(),
+                  style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: Colors.white54, letterSpacing: 1),
                 ),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                const SizedBox(height: 14),
+                Row(
                   children: <Widget>[
-                    Text(
-                      '${stock.total}',
-                      style: const TextStyle(
-                        fontSize: 62,
-                        height: 1,
-                        fontWeight: FontWeight.w900,
-                        color: Colors.white,
+                    Expanded(
+                      child: _DashHeroCol(
+                        label: 'Revenus',
+                        value: fmtMAD(revMois),
+                        color: const Color(0xFF52D789),
                       ),
                     ),
-                    const SizedBox(height: 8),
-                    const Text(
-                      'Cheptel total',
-                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: Colors.white),
+                    Container(width: 1, height: 44, color: Colors.white24),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: _DashHeroCol(
+                        label: 'Dépenses',
+                        value: fmtMAD(depMois),
+                        color: const Color(0xFFFF7070),
+                      ),
                     ),
-                    const SizedBox(height: 6),
-                    Text(
-                      '${stock.femelles} brebis · ${stock.males} béliers · ${stock.agneauxF + stock.agneauxM} agneaux',
-                      style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Colors.white70),
+                  ],
+                ),
+                const SizedBox(height: 14),
+                Container(height: 1, color: Colors.white24),
+                const SizedBox(height: 12),
+                Row(
+                  children: <Widget>[
+                    Expanded(
+                      child: _DashHeroStat(
+                        label: 'Solde du mois',
+                        value: fmtMAD(soldeMois.abs()),
+                        positive: soldeMois >= 0,
+                      ),
+                    ),
+                    Expanded(
+                      child: _DashHeroStat(
+                        label: 'Bilan cumulé',
+                        value: fmtMAD(bilanTotal.abs()),
+                        positive: bilanTotal >= 0,
+                      ),
                     ),
                   ],
                 ),
               ],
             ),
           ),
-          GridView.count(
-            crossAxisCount: 2,
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            crossAxisSpacing: 12,
-            mainAxisSpacing: 12,
-            childAspectRatio: 1.28,
-            padding: const EdgeInsets.only(bottom: 14),
-            children: <Widget>[
-              KpiCard(emoji: '🐑', value: '${stock.femelles}', label: 'Femelles', onTap: () => _showCheptelDetail(context, 'femelles')),
-              KpiCard(emoji: '🐏', value: '${stock.males}', label: 'Mâles', onTap: () => _showCheptelDetail(context, 'males')),
-              KpiCard(emoji: '🐣', value: '${stock.agneauxF}', label: 'Agneaux femelles', onTap: () => _showCheptelDetail(context, 'agf')),
-              KpiCard(emoji: '🐥', value: '${stock.agneauxM}', label: 'Agneaux mâles', onTap: () => _showCheptelDetail(context, 'agm')),
-            ],
+
+          // ── Compact cheptel row ────────────────────────────────────────
+          GestureDetector(
+            onTap: () => _showCheptelDetail(context, 'femelles'),
+            child: Container(
+              margin: const EdgeInsets.only(bottom: 14),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+              decoration: BoxDecoration(
+                color: AppColors.bg4,
+                borderRadius: BorderRadius.circular(18),
+                border: Border.all(color: AppColors.greenBg),
+              ),
+              child: Row(
+                children: <Widget>[
+                  const Text('🐑', style: TextStyle(fontSize: 22)),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: <Widget>[
+                        const Text('Cheptel', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: AppColors.text)),
+                        Text(
+                          '${stock.femelles} brebis · ${stock.males} béliers · ${stock.agneauxF + stock.agneauxM} agneaux',
+                          style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.text2),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Text('${stock.total}', style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w900, color: AppColors.green2)),
+                  const SizedBox(width: 6),
+                  const Icon(Icons.arrow_forward_ios_rounded, size: 14, color: AppColors.text3),
+                ],
+              ),
+            ),
           ),
-          Wrap(
-            spacing: 10,
-            runSpacing: 10,
-            children: <Widget>[
-              GestureDetector(
-                onTap: () => Navigator.push(context, MaterialPageRoute<void>(
-                  builder: (_) => Scaffold(
-                    appBar: AppBar(title: const Text('Dépenses')),
-                    body: const DepensesScreen(),
-                  ),
-                )),
-                child: FinSumCard(value: fmtMAD(depenses), label: 'Dépenses du mois', color: AppColors.red),
-              ),
-              GestureDetector(
-                onTap: () => Navigator.push(context, MaterialPageRoute<void>(
-                  builder: (_) => Scaffold(
-                    appBar: AppBar(title: const Text('Revenus')),
-                    body: const RevenusScreen(),
-                  ),
-                )),
-                child: FinSumCard(value: fmtMAD(revenus), label: 'Revenus du mois', color: AppColors.green2),
-              ),
-              GestureDetector(
-                onTap: () => Navigator.push(context, MaterialPageRoute<void>(
-                  builder: (_) => Scaffold(
-                    appBar: AppBar(title: const Text('Finances')),
-                    body: const FinancesScreen(),
-                  ),
-                )),
-                child: FinSumCard(
-                  value: fmtMAD(bilan.abs()),
-                  label: bilan >= 0 ? 'Bilan positif' : 'Bilan négatif',
-                  color: bilan >= 0 ? AppColors.green2 : AppColors.red,
+
+          // ── Inline Rapports ────────────────────────────────────────────
+          AppCard(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                const CardTitle('RAPPORTS'),
+                // Type toggle
+                Row(
+                  children: <Widget>[
+                    Expanded(
+                      child: _DashToggleBtn(
+                        label: 'Dépenses',
+                        active: _reportType == 'depenses',
+                        color: AppColors.red,
+                        onTap: () => setState(() => _reportType = 'depenses'),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: _DashToggleBtn(
+                        label: 'Revenus',
+                        active: _reportType == 'revenus',
+                        color: AppColors.green2,
+                        onTap: () => setState(() => _reportType = 'revenus'),
+                      ),
+                    ),
+                  ],
                 ),
-              ),
-            ],
+                const SizedBox(height: 10),
+                // Period chips
+                SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: Row(
+                    children: <Widget>[
+                      _DashPeriodChip(label: 'Ce mois', selected: _periode == 'mensuel', onTap: () => setState(() => _periode = 'mensuel')),
+                      const SizedBox(width: 8),
+                      _DashPeriodChip(label: 'Cette année', selected: _periode == 'annuel', onTap: () => setState(() => _periode = 'annuel')),
+                      const SizedBox(width: 8),
+                      _DashPeriodChip(label: 'Cette semaine', selected: _periode == 'hebdo', onTap: () => setState(() => _periode = 'hebdo')),
+                      const SizedBox(width: 8),
+                      _DashPeriodChip(label: 'Tout', selected: _periode == 'tout', onTap: () => setState(() => _periode = 'tout')),
+                    ],
+                  ),
+                ),
+                // Date selectors
+                if (_periode == 'mensuel') ...<Widget>[
+                  const SizedBox(height: 10),
+                  Row(
+                    children: <Widget>[
+                      Expanded(
+                        child: _DashDropdown<int>(
+                          value: _mois,
+                          items: List<int>.generate(12, (i) => i + 1),
+                          label: (m) => DateFormat('MMMM', 'fr_FR').format(DateTime(2000, m)),
+                          onChanged: (v) => setState(() => _mois = v),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: _DashDropdown<int>(
+                          value: _annee,
+                          items: years,
+                          label: (y) => '$y',
+                          onChanged: (v) => setState(() => _annee = v),
+                        ),
+                      ),
+                    ],
+                  ),
+                ] else if (_periode == 'annuel') ...<Widget>[
+                  const SizedBox(height: 10),
+                  _DashDropdown<int>(
+                    value: _annee,
+                    items: years,
+                    label: (y) => '$y',
+                    onChanged: (v) => setState(() => _annee = v),
+                  ),
+                ],
+                const SizedBox(height: 14),
+                // Category bars
+                if (reportByCategorie.isEmpty)
+                  const EmptyState(emoji: '📊', text: 'Aucune donnée pour cette période')
+                else ...<Widget>[
+                  ...reportByCategorie.entries.map(
+                    (entry) => CatRow(cat: entry.key, amount: entry.value, total: reportTotal, color: reportColor),
+                  ),
+                  Container(height: 1, color: AppColors.bg4, margin: const EdgeInsets.symmetric(vertical: 8)),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: <Widget>[
+                      const Text('Total', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w800, color: AppColors.text)),
+                      Text(fmtMAD(reportTotal), style: TextStyle(fontSize: 14, fontWeight: FontWeight.w900, color: reportColor)),
+                    ],
+                  ),
+                ],
+              ],
+            ),
           ),
-          const SizedBox(height: 14),
-          const Text(
-            'RACCOURCIS RAPIDES',
-            style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800, letterSpacing: .6, color: AppColors.text3),
-          ),
-          const SizedBox(height: 10),
-          GridView.count(
-            crossAxisCount: 3,
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            crossAxisSpacing: 10,
-            mainAxisSpacing: 10,
-            childAspectRatio: .96,
-            padding: const EdgeInsets.only(bottom: 14),
-            children: <Widget>[
-              QuickBtn(emoji: '🐣', label: 'Naissance', onTap: () => showMvtForm(context, initialType: 'naissance_agf')),
-              QuickBtn(emoji: '💸', label: 'Dépense', onTap: () => showDepForm(context)),
-              QuickBtn(emoji: '💰', label: 'Revenu', onTap: () => showRevForm(context)),
-              QuickBtn(emoji: '🛒', label: 'Achat', onTap: () => showMvtForm(context, initialType: 'achat_femelle')),
-              QuickBtn(emoji: '🤝', label: 'Vente', onTap: () => showMvtForm(context, initialType: 'vente_femelle')),
-              QuickBtn(emoji: '💀', label: 'Décès', onTap: () => showMvtForm(context, initialType: 'deces_femelle')),
-            ],
-          ),
+
+          // ── Récent ────────────────────────────────────────────────────
           AppCard(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -223,6 +357,140 @@ class DashboardScreen extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+// ── Dashboard sub-widgets ──────────────────────────────────────────────────────
+
+class _DashHeroCol extends StatelessWidget {
+  const _DashHeroCol({required this.label, required this.value, required this.color});
+  final String label;
+  final String value;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        Text(label, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: Colors.white60)),
+        const SizedBox(height: 4),
+        Text(value, style: TextStyle(fontSize: 17, fontWeight: FontWeight.w900, color: color)),
+      ],
+    );
+  }
+}
+
+class _DashHeroStat extends StatelessWidget {
+  const _DashHeroStat({required this.label, required this.value, required this.positive});
+  final String label;
+  final String value;
+  final bool positive;
+
+  @override
+  Widget build(BuildContext context) {
+    final color = positive ? const Color(0xFF52D789) : const Color(0xFFFF7070);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        Text(label, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Colors.white60)),
+        const SizedBox(height: 3),
+        Row(
+          children: <Widget>[
+            Icon(
+              positive ? Icons.trending_up_rounded : Icons.trending_down_rounded,
+              size: 15,
+              color: color,
+            ),
+            const SizedBox(width: 4),
+            Text(value, style: TextStyle(fontSize: 14, fontWeight: FontWeight.w900, color: color)),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+class _DashToggleBtn extends StatelessWidget {
+  const _DashToggleBtn({required this.label, required this.active, required this.color, required this.onTap});
+  final String label;
+  final bool active;
+  final Color color;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 150),
+        padding: const EdgeInsets.symmetric(vertical: 10),
+        decoration: BoxDecoration(
+          color: active ? color.withOpacity(0.12) : AppColors.bg4,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: active ? color : Colors.transparent, width: 1.5),
+        ),
+        child: Text(
+          label,
+          textAlign: TextAlign.center,
+          style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: active ? color : AppColors.text2),
+        ),
+      ),
+    );
+  }
+}
+
+class _DashPeriodChip extends StatelessWidget {
+  const _DashPeriodChip({required this.label, required this.selected, required this.onTap});
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 150),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+        decoration: BoxDecoration(
+          color: selected ? AppColors.green2 : AppColors.bg4,
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w800,
+            color: selected ? Colors.white : AppColors.text2,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _DashDropdown<T> extends StatelessWidget {
+  const _DashDropdown({required this.value, required this.items, required this.label, required this.onChanged});
+  final T value;
+  final List<T> items;
+  final String Function(T) label;
+  final void Function(T) onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
+      decoration: BoxDecoration(color: AppColors.bg4, borderRadius: BorderRadius.circular(12)),
+      child: DropdownButton<T>(
+        value: value,
+        isExpanded: true,
+        underline: const SizedBox.shrink(),
+        style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: AppColors.text),
+        items: items.map((item) => DropdownMenuItem<T>(value: item, child: Text(label(item)))).toList(),
+        onChanged: (v) { if (v != null) onChanged(v); },
       ),
     );
   }
