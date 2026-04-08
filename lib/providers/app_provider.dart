@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import '../models/ferme_models.dart';
 import '../models/models.dart';
 import '../services/database_service.dart';
+import '../services/sync_service.dart';
 
 class AppProvider extends ChangeNotifier {
   final DatabaseService _db = DatabaseService.instance;
@@ -358,6 +359,29 @@ class AppProvider extends ChangeNotifier {
   }
 
   Future<void> exportDatabase() => _db.exportDatabase();
+
+  // ─── Supabase Sync ─────────────────────────────────────────────────────────
+
+  bool syncInProgress = false;
+
+  Future<SyncResult> syncToSupabase() async {
+    syncInProgress = true;
+    notifyListeners();
+    final result = await SyncService.instance.syncAll();
+    syncInProgress = false;
+    notifyListeners();
+    return result;
+  }
+
+  Future<SyncResult> restoreFromSupabase() async {
+    syncInProgress = true;
+    notifyListeners();
+    final result = await SyncService.instance.pullAll();
+    if (result.success) await load();
+    syncInProgress = false;
+    notifyListeners();
+    return result;
+  }
 
   Future<void> _reloadCategories() async {
     depCategories = await _db.getCategories('depense');

@@ -757,6 +757,58 @@ class _ManagementHubScreenState extends State<ManagementHubScreen>
               ],
             ),
           ),
+          const SizedBox(height: 8),
+          // ── Supabase Sync ────────────────────────────────────────────────
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Row(
+              children: <Widget>[
+                Expanded(
+                  child: _ToolBtn(
+                    emoji: '☁️',
+                    label: 'Sync → Supabase',
+                    color: AppColors.blue2,
+                    onTap: () async {
+                      final provider = context.read<AppProvider>();
+                      if (provider.syncInProgress) return;
+                      final result = await provider.syncToSupabase();
+                      if (!context.mounted) return;
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(result.message),
+                          backgroundColor: result.success ? AppColors.green2 : AppColors.red,
+                          duration: const Duration(seconds: 4),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: _ToolBtn(
+                    emoji: '📥',
+                    label: 'Restaurer depuis cloud',
+                    color: AppColors.orange2,
+                    onTap: () => _confirmDelete(
+                      context,
+                      () async {
+                        final provider = context.read<AppProvider>();
+                        final result = await provider.restoreFromSupabase();
+                        if (!context.mounted) return;
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(result.message),
+                            backgroundColor: result.success ? AppColors.green2 : AppColors.red,
+                            duration: const Duration(seconds: 4),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
           const SizedBox(height: 10),
           // ── Category tabs ────────────────────────────────────────────────
           Expanded(

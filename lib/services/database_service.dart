@@ -426,6 +426,54 @@ class DatabaseService {
     await database.delete('categories', where: 'id = ?', whereArgs: [id]);
   }
 
+  Future<List<AppCategory>> getAllCategories() async {
+    final database = await db;
+    final rows = await database.query('categories', orderBy: 'type ASC, ordre ASC');
+    return rows.map(AppCategory.fromMap).toList();
+  }
+
+  // ─── Upsert (for Supabase pull sync) ──────────────────────────────────────
+
+  Future<void> upsertMouvement(Mouvement m) async {
+    final database = await db;
+    await database.insert('mouvements', m.toMap(), conflictAlgorithm: ConflictAlgorithm.replace);
+  }
+
+  Future<void> upsertDepense(Depense d) async {
+    final database = await db;
+    await database.insert('depenses', d.toMap(), conflictAlgorithm: ConflictAlgorithm.replace);
+  }
+
+  Future<void> upsertRevenu(Revenu r) async {
+    final database = await db;
+    await database.insert('revenus', r.toMap(), conflictAlgorithm: ConflictAlgorithm.replace);
+  }
+
+  Future<void> upsertRecolte(Recolte r) async {
+    final database = await db;
+    await database.insert('recoltes', r.toMap(), conflictAlgorithm: ConflictAlgorithm.replace);
+  }
+
+  Future<void> upsertTrituration(Trituration t) async {
+    final database = await db;
+    await database.insert('triturations', t.toMap(), conflictAlgorithm: ConflictAlgorithm.replace);
+  }
+
+  Future<void> upsertTravailleurSession(TravailleurSession s) async {
+    final database = await db;
+    await database.insert('travailleur_sessions', s.toMap(), conflictAlgorithm: ConflictAlgorithm.replace);
+  }
+
+  Future<void> upsertRecurringExpense(RecurringExpense r) async {
+    final database = await db;
+    await database.insert('recurring_expenses', r.toMap(), conflictAlgorithm: ConflictAlgorithm.replace);
+  }
+
+  Future<void> upsertCategory(AppCategory c) async {
+    final database = await db;
+    await database.insert('categories', c.toMap(), conflictAlgorithm: ConflictAlgorithm.replace);
+  }
+
   // ─── Clear All ─────────────────────────────────────────────────────────────
 
   Future<void> clearAll() async {

@@ -2,6 +2,7 @@
 import 'package:flutter/services.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:provider/provider.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'providers/app_provider.dart';
 import 'screens/cultures_screen.dart';
@@ -13,6 +14,11 @@ import 'widgets/form_sheet.dart';
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await initializeDateFormatting('fr_FR');
+
+  await Supabase.initialize(
+    url: 'https://veyiesxsoidwsguuatgr.supabase.co',
+    anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZleWllc3hzb2lkd3NndXVhdGdyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUyNDI4NzUsImV4cCI6MjA5MDgxODg3NX0.DIHgow5Z_bdzVmNyPpPxL6_83m4CZE_Z9mvFmwuL0ZY',
+  );
   await SystemChrome.setPreferredOrientations(<DeviceOrientation>[
     DeviceOrientation.portraitUp,
   ]);
