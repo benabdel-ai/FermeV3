@@ -204,8 +204,9 @@ class DatabaseService {
     final stamp = '${now.year}${now.month.toString().padLeft(2,'0')}${now.day.toString().padLeft(2,'0')}_${now.hour.toString().padLeft(2,'0')}${now.minute.toString().padLeft(2,'0')}';
     final exportPath = join(dir.path, 'MaFerme_backup_$stamp.db');
     await File(dbPath).copy(exportPath);
-    await SharePlus.instance.share(
-      ShareParams(files: [XFile(exportPath)], text: 'Sauvegarde Ma Ferme Pro — $stamp'),
+    await Share.shareXFiles(
+      [XFile(exportPath)],
+      text: 'Sauvegarde Ma Ferme Pro — $stamp',
     );
   }
 
