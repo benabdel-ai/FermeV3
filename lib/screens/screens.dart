@@ -7,6 +7,7 @@ import '../providers/app_provider.dart';
 import '../theme.dart';
 import '../widgets/form_sheet.dart';
 import '../widgets/widgets.dart';
+import 'rapports_screen.dart';
 
 class DashboardScreen extends StatelessWidget {
   const DashboardScreen({super.key});
@@ -112,22 +113,46 @@ class DashboardScreen extends StatelessWidget {
             childAspectRatio: 1.28,
             padding: const EdgeInsets.only(bottom: 14),
             children: <Widget>[
-              KpiCard(emoji: '🐑', value: '${stock.femelles}', label: 'Femelles'),
-              KpiCard(emoji: '🐏', value: '${stock.males}', label: 'Mâles'),
-              KpiCard(emoji: '🐣', value: '${stock.agneauxF}', label: 'Agneaux femelles'),
-              KpiCard(emoji: '🐥', value: '${stock.agneauxM}', label: 'Agneaux mâles'),
+              KpiCard(emoji: '🐑', value: '${stock.femelles}', label: 'Femelles', onTap: () => _showCheptelDetail(context, 'femelles')),
+              KpiCard(emoji: '🐏', value: '${stock.males}', label: 'Mâles', onTap: () => _showCheptelDetail(context, 'males')),
+              KpiCard(emoji: '🐣', value: '${stock.agneauxF}', label: 'Agneaux femelles', onTap: () => _showCheptelDetail(context, 'agf')),
+              KpiCard(emoji: '🐥', value: '${stock.agneauxM}', label: 'Agneaux mâles', onTap: () => _showCheptelDetail(context, 'agm')),
             ],
           ),
           Wrap(
             spacing: 10,
             runSpacing: 10,
             children: <Widget>[
-              FinSumCard(value: fmtMAD(depenses), label: 'Dépenses du mois', color: AppColors.red),
-              FinSumCard(value: fmtMAD(revenus), label: 'Revenus du mois', color: AppColors.green2),
-              FinSumCard(
-                value: fmtMAD(bilan.abs()),
-                label: bilan >= 0 ? 'Bilan positif' : 'Bilan négatif',
-                color: bilan >= 0 ? AppColors.green2 : AppColors.red,
+              GestureDetector(
+                onTap: () => Navigator.push(context, MaterialPageRoute<void>(
+                  builder: (_) => Scaffold(
+                    appBar: AppBar(title: const Text('Dépenses')),
+                    body: const DepensesScreen(),
+                  ),
+                )),
+                child: FinSumCard(value: fmtMAD(depenses), label: 'Dépenses du mois', color: AppColors.red),
+              ),
+              GestureDetector(
+                onTap: () => Navigator.push(context, MaterialPageRoute<void>(
+                  builder: (_) => Scaffold(
+                    appBar: AppBar(title: const Text('Revenus')),
+                    body: const RevenusScreen(),
+                  ),
+                )),
+                child: FinSumCard(value: fmtMAD(revenus), label: 'Revenus du mois', color: AppColors.green2),
+              ),
+              GestureDetector(
+                onTap: () => Navigator.push(context, MaterialPageRoute<void>(
+                  builder: (_) => Scaffold(
+                    appBar: AppBar(title: const Text('Finances')),
+                    body: const FinancesScreen(),
+                  ),
+                )),
+                child: FinSumCard(
+                  value: fmtMAD(bilan.abs()),
+                  label: bilan >= 0 ? 'Bilan positif' : 'Bilan négatif',
+                  color: bilan >= 0 ? AppColors.green2 : AppColors.red,
+                ),
               ),
             ],
           ),
@@ -277,10 +302,10 @@ class CheptelScreen extends StatelessWidget {
                   mainAxisSpacing: 12,
                   childAspectRatio: 1.22,
                   children: <Widget>[
-                    KpiCard(emoji: '🐑', value: '${stock.femelles}', label: 'Femelles'),
-                    KpiCard(emoji: '🐏', value: '${stock.males}', label: 'Mâles'),
-                    KpiCard(emoji: '🐣', value: '${stock.agneauxF}', label: 'Agneaux femelles'),
-                    KpiCard(emoji: '🐥', value: '${stock.agneauxM}', label: 'Agneaux mâles'),
+                    KpiCard(emoji: '🐑', value: '${stock.femelles}', label: 'Femelles', onTap: () => _showCheptelDetail(context, 'femelles')),
+                    KpiCard(emoji: '🐏', value: '${stock.males}', label: 'Mâles', onTap: () => _showCheptelDetail(context, 'males')),
+                    KpiCard(emoji: '🐣', value: '${stock.agneauxF}', label: 'Agneaux femelles', onTap: () => _showCheptelDetail(context, 'agf')),
+                    KpiCard(emoji: '🐥', value: '${stock.agneauxM}', label: 'Agneaux mâles', onTap: () => _showCheptelDetail(context, 'agm')),
                   ],
                 ),
               ],
@@ -602,7 +627,7 @@ class _FinancesScreenState extends State<FinancesScreen> with SingleTickerProvid
   @override
   void initState() {
     super.initState();
-    _tab = TabController(length: 3, vsync: this);
+    _tab = TabController(length: 4, vsync: this);
   }
 
   @override
@@ -623,6 +648,7 @@ class _FinancesScreenState extends State<FinancesScreen> with SingleTickerProvid
             Tab(text: 'Dépenses'),
             Tab(text: 'Revenus'),
             Tab(text: 'Historique'),
+            Tab(text: '📊 Rapports'),
           ],
         ),
         Expanded(
@@ -632,6 +658,7 @@ class _FinancesScreenState extends State<FinancesScreen> with SingleTickerProvid
               DepensesScreen(),
               RevenusScreen(),
               HistoriqueScreen(),
+              RapportsScreen(),
             ],
           ),
         ),
@@ -962,4 +989,198 @@ void _confirmDelete(BuildContext context, VoidCallback onConfirm) {
       ],
     ),
   );
+}
+
+// ─── Cheptel Detail ───────────────────────────────────────────────────────────
+
+void _showCheptelDetail(BuildContext context, String category) {
+  showModalBottomSheet<void>(
+    context: context,
+    isScrollControlled: true,
+    backgroundColor: Colors.transparent,
+    builder: (_) => _CheptelDetailSheet(category: category),
+  );
+}
+
+class _CheptelDetailSheet extends StatelessWidget {
+  const _CheptelDetailSheet({required this.category});
+  final String category;
+
+  static const Map<String, Set<String>> _categoryTypes = <String, Set<String>>{
+    'femelles': {'init_femelles', 'achat_femelle', 'vente_femelle', 'deces_femelle', 'passage_agf'},
+    'males': {'init_males', 'achat_male', 'vente_male', 'deces_male', 'passage_agm'},
+    'agf': {'init_agf', 'naissance_agf', 'passage_agf'},
+    'agm': {'init_agm', 'naissance_agm', 'passage_agm'},
+  };
+
+  static const Map<String, String> _titles = <String, String>{
+    'femelles': 'Femelles',
+    'males': 'Mâles',
+    'agf': 'Agneaux femelles',
+    'agm': 'Agneaux mâles',
+  };
+
+  static const Map<String, String> _emojis = <String, String>{
+    'femelles': '🐑',
+    'males': '🐏',
+    'agf': '🐣',
+    'agm': '🐥',
+  };
+
+  static const Map<String, String> _addTypes = <String, String>{
+    'femelles': 'achat_femelle',
+    'males': 'achat_male',
+    'agf': 'naissance_agf',
+    'agm': 'naissance_agm',
+  };
+
+  @override
+  Widget build(BuildContext context) {
+    final provider = context.watch<AppProvider>();
+    final stock = provider.stock;
+    final types = _categoryTypes[category]!;
+    final mouvements = provider.mouvements
+        .where((m) => types.contains(m.type))
+        .toList()
+      ..sort((a, b) => b.date.compareTo(a.date));
+
+    final currentValue = switch (category) {
+      'femelles' => stock.femelles,
+      'males' => stock.males,
+      'agf' => stock.agneauxF,
+      'agm' => stock.agneauxM,
+      _ => 0,
+    };
+
+    return SafeArea(
+      top: false,
+      child: Container(
+        height: MediaQuery.of(context).size.height * 0.78,
+        decoration: const BoxDecoration(
+          color: AppColors.bg2,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+        ),
+        child: Column(
+          children: <Widget>[
+            // ── Handle + Header ──────────────────────────────────────────
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  Center(
+                    child: Container(
+                      width: 40,
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: AppColors.border,
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Row(
+                    children: <Widget>[
+                      Container(
+                        width: 56,
+                        height: 56,
+                        decoration: BoxDecoration(
+                          color: AppColors.greenBg,
+                          borderRadius: BorderRadius.circular(18),
+                        ),
+                        child: Center(
+                          child: Text(
+                            _emojis[category]!,
+                            style: const TextStyle(fontSize: 30),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: <Widget>[
+                            Text(
+                              _titles[category]!,
+                              style: const TextStyle(
+                                fontSize: 22,
+                                fontWeight: FontWeight.w900,
+                                color: AppColors.green2,
+                              ),
+                            ),
+                            Text(
+                              '$currentValue tête${currentValue > 1 ? 's' : ''} actuellement',
+                              style: const TextStyle(
+                                fontSize: 13,
+                                color: AppColors.text3,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      ElevatedButton.icon(
+                        onPressed: () =>
+                            showMvtForm(context, initialType: _addTypes[category]!),
+                        icon: const Icon(Icons.add, size: 16),
+                        label: const Text('Ajouter'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.green2,
+                          minimumSize: const Size(0, 38),
+                          padding: const EdgeInsets.symmetric(horizontal: 14),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 14),
+                  const Divider(height: 1),
+                  const SizedBox(height: 6),
+                  Text(
+                    'HISTORIQUE DES MOUVEMENTS',
+                    style: const TextStyle(
+                      fontSize: 11,
+                      letterSpacing: .6,
+                      fontWeight: FontWeight.w900,
+                      color: AppColors.text3,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                ],
+              ),
+            ),
+            // ── Movements list ───────────────────────────────────────────
+            Expanded(
+              child: mouvements.isEmpty
+                  ? const EmptyState(
+                      emoji: '📭',
+                      text: 'Aucun mouvement enregistré dans cette catégorie',
+                    )
+                  : ListView.builder(
+                      padding: const EdgeInsets.fromLTRB(16, 4, 16, 24),
+                      itemCount: mouvements.length,
+                      itemBuilder: (ctx, i) {
+                        final m = mouvements[i];
+                        return HistoryItem(
+                          emoji: m.emoji,
+                          title: m.label,
+                          subtitle:
+                              '${fmtDate(m.date)}${m.remarque.isNotEmpty ? ' · ${m.remarque}' : ''}',
+                          value: '×${m.qte}',
+                          valueColor: mvtFgColor(m.color),
+                          bgColor: mvtBgColor(m.color),
+                          onDelete: () => _confirmDelete(
+                            context,
+                            () => context
+                                .read<AppProvider>()
+                                .deleteMouvement(m.id),
+                          ),
+                        );
+                      },
+                    ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }

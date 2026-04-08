@@ -113,16 +113,18 @@ class KpiCard extends StatelessWidget {
     required this.value,
     required this.label,
     this.valueColor,
+    this.onTap,
   });
 
   final String emoji;
   final String value;
   final String label;
   final Color? valueColor;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    final card = Container(
       decoration: BoxDecoration(
         color: AppColors.cardSoft,
         borderRadius: BorderRadius.circular(22),
@@ -167,9 +169,18 @@ class KpiCard extends StatelessWidget {
               ),
             ],
           ),
+          if (onTap != null)
+            const Positioned(
+              right: 0,
+              bottom: 0,
+              child: Icon(Icons.arrow_forward_ios_rounded, size: 12, color: AppColors.text3),
+            ),
         ],
       ),
     );
+
+    if (onTap == null) return card;
+    return GestureDetector(onTap: onTap, child: card);
   }
 }
 
