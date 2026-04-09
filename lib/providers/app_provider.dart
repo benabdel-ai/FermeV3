@@ -22,6 +22,7 @@ class AppProvider extends ChangeNotifier {
   List<Trituration> triturations = <Trituration>[];
   List<TravailleurSession> travailleurSessions = <TravailleurSession>[];
   List<RecurringExpense> recurringExpenses = <RecurringExpense>[];
+  List<AidMouton> aidMoutons = <AidMouton>[];
 
   List<AppCategory> depCategories = <AppCategory>[];
   List<AppCategory> revCategories = <AppCategory>[];
@@ -46,6 +47,7 @@ class AppProvider extends ChangeNotifier {
     triturations = await _db.getTriturations();
     travailleurSessions = await _db.getTravailleurSessions();
     recurringExpenses = await _db.getRecurringExpenses();
+    aidMoutons = await _db.getAidMoutons();
     depCategories = await _db.getCategories('depense');
     revCategories = await _db.getCategories('revenu');
     cultureCategories = await _db.getCategories('culture');
@@ -356,6 +358,40 @@ class AppProvider extends ChangeNotifier {
   Future<void> deleteCategory(String id) async {
     await _db.deleteCategory(id);
     await _reloadCategories();
+  }
+
+  // ─── AidMouton getters ─────────────────────────────────────────────────────
+
+  int get aidTotal => aidMoutons.length;
+  List<AidMouton> get aidDisponibles => aidMoutons.where((m) => m.isAvailable).toList();
+  List<AidMouton> get aidReserves => aidMoutons.where((m) => m.reserved && !m.sold).toList();
+  List<AidMouton> get aidVendus => aidMoutons.where((m) => m.sold).toList();
+  double get aidBeneficeTotal {
+    double benefice = 0;
+    for (final m in aidMoutons.where((m) => m.sold)) {
+      benefice += m.prixVente - m.prixAchat - m.coutRevient;
+    }
+    return benefice;
+  }
+
+  // ─── CRUD AidMouton ────────────────────────────────────────────────────────
+
+  Future<void> addAidMouton(AidMouton mouton) async {
+    await _db.insertAidMouton(mouton);
+    aidMoutons = await _db.getAidMoutons();
+    notifyListeners();
+  }
+
+  Future<void> updateAidMouton(AidMouton mouton) async {
+    await _db.updateAidMouton(mouton);
+    aidMoutons = await _db.getAidMoutons();
+    notifyListeners();
+  }
+
+  Future<void> deleteAidMouton(String id) async {
+    await _db.deleteAidMouton(id);
+    aidMoutons.removeWhere((m) => m.id == id);
+    notifyListeners();
   }
 
   Future<void> exportDatabase() => _db.exportDatabase();
