@@ -5,6 +5,9 @@ import '../models/models.dart';
 import '../services/database_service.dart';
 import '../services/sync_service.dart';
 
+// Sur le web, sqflite n'est pas supporté — on charge vide
+const bool _isWeb = kIsWeb;
+
 class AppProvider extends ChangeNotifier {
   final DatabaseService _db = DatabaseService.instance;
 
@@ -40,20 +43,46 @@ class AppProvider extends ChangeNotifier {
     loading = true;
     notifyListeners();
 
-    mouvements = await _db.getMouvements();
-    depenses = await _db.getDepenses();
-    revenus = await _db.getRevenus();
-    recoltes = await _db.getRecoltes();
-    triturations = await _db.getTriturations();
-    travailleurSessions = await _db.getTravailleurSessions();
-    recurringExpenses = await _db.getRecurringExpenses();
-    aidMoutons = await _db.getAidMoutons();
-    depCategories = await _db.getCategories('depense');
-    revCategories = await _db.getCategories('revenu');
-    cultureCategories = await _db.getCategories('culture');
+    if (!_isWeb) {
+      try {
+        mouvements = await _db.getMouvements();
+        depenses = await _db.getDepenses();
+        revenus = await _db.getRevenus();
+        recoltes = await _db.getRecoltes();
+        triturations = await _db.getTriturations();
+        travailleurSessions = await _db.getTravailleurSessions();
+        recurringExpenses = await _db.getRecurringExpenses();
+        aidMoutons = await _db.getAidMoutons();
+        depCategories = await _db.getCategories('depense');
+        revCategories = await _db.getCategories('revenu');
+        cultureCategories = await _db.getCategories('culture');
+      } catch (e) {
+        debugPrint('DB load error: $e');
+      }
+    } else {
+      // Web: pas de SQLite — données vides, catégories par défaut
+      depCategories = _defaultDepCats();
+      revCategories = _defaultRevCats();
+      cultureCategories = _defaultCultCats();
+    }
 
     loading = false;
     notifyListeners();
+  }
+
+  List<AppCategory> _defaultDepCats() {
+    const labels = ['Alimentation', 'Vétérinaire', 'Transport', 'Achat bétail', "Main-d'œuvre", 'Équipement', 'Eau / Électricité', 'Engrais / Produits', 'Autre'];
+    return labels.asMap().entries.map((e) => AppCategory(type: 'depense', label: e.value, ordre: e.key)).toList();
+  }
+
+  List<AppCategory> _defaultRevCats() {
+    const labels = ['Vente brebis', 'Vente bélier', 'Vente agneau', "Vente huile d'olive", 'Vente olives', 'Lait', 'Fumier', 'Autre'];
+    return labels.asMap().entries.map((e) => AppCategory(type: 'revenu', label: e.value, ordre: e.key)).toList();
+  }
+
+  List<AppCategory> _defaultCultCats() {
+    const labels = ['Olives', "Huile d'olive", 'Citrons', 'Figues', 'Luzerne', 'Autre'];
+    return labels.asMap().entries.map((e) => AppCategory(type: 'culture', label: e.value, ordre: e.key)).toList();
   }
 
   // ─── Filtre ferme ──────────────────────────────────────────────────────────
@@ -158,6 +187,7 @@ class AppProvider extends ChangeNotifier {
   // ─── CRUD Mouvements ───────────────────────────────────────────────────────
 
   Future<void> addMouvement(Mouvement mouvement) async {
+    if (_isWeb) return;
     await _db.insertMouvement(mouvement);
     mouvements = await _db.getMouvements();
     notifyListeners();
@@ -172,6 +202,7 @@ class AppProvider extends ChangeNotifier {
   // ─── CRUD Dépenses ─────────────────────────────────────────────────────────
 
   Future<void> addDepense(Depense depense) async {
+    if (_isWeb) return;
     await _db.insertDepense(depense);
     depenses = await _db.getDepenses();
     notifyListeners();
@@ -192,6 +223,7 @@ class AppProvider extends ChangeNotifier {
   // ─── CRUD Revenus ──────────────────────────────────────────────────────────
 
   Future<void> addRevenu(Revenu revenu) async {
+    if (_isWeb) return;
     await _db.insertRevenu(revenu);
     revenus = await _db.getRevenus();
     notifyListeners();
@@ -212,6 +244,7 @@ class AppProvider extends ChangeNotifier {
   // ─── CRUD Récoltes ─────────────────────────────────────────────────────────
 
   Future<void> addRecolte(Recolte recolte) async {
+    if (_isWeb) return;
     await _db.insertRecolte(recolte);
     recoltes = await _db.getRecoltes();
     notifyListeners();
@@ -277,6 +310,7 @@ class AppProvider extends ChangeNotifier {
   // ─── CRUD Travailleurs ─────────────────────────────────────────────────────
 
   Future<void> addTravailleurSession(TravailleurSession session) async {
+    if (_isWeb) return;
     await _db.insertTravailleurSession(session);
 
     await _db.insertDepense(Depense(
@@ -377,6 +411,7 @@ class AppProvider extends ChangeNotifier {
   // ─── CRUD AidMouton ────────────────────────────────────────────────────────
 
   Future<bool> addAidMouton(AidMouton mouton) async {
+    if (_isWeb) return false;
     try {
       await _db.insertAidMouton(mouton);
       aidMoutons = await _db.getAidMoutons();
