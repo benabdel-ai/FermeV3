@@ -51,6 +51,19 @@ class Recolte {
   final DateTime date;
   final String remarque;
 
+  // Trituration / moulin fields (merged)
+  final double coutOuvriers;
+  final double coutTransport;
+  final double coutMoulin;
+  final double litresHuile;
+  final double litresVente;
+  final double litresFamille;
+  final double litresHeritiers;
+  final double prixVenteLitre;
+  final double prixVenteKg;
+  final double diversMontant;
+  final String diversRemarque;
+
   Recolte({
     String? id,
     required this.fermeId,
@@ -62,7 +75,25 @@ class Recolte {
     this.quantiteInterne = 0,
     required this.date,
     this.remarque = '',
+    this.coutOuvriers = 0,
+    this.coutTransport = 0,
+    this.coutMoulin = 0,
+    this.litresHuile = 0,
+    this.litresVente = 0,
+    this.litresFamille = 0,
+    this.litresHeritiers = 0,
+    this.prixVenteLitre = 0,
+    this.prixVenteKg = 0,
+    this.diversMontant = 0,
+    this.diversRemarque = '',
   }) : id = id ?? _uuid.v4();
+
+  // Computed getters
+  double get rendementPct => quantite > 0 ? (litresHuile / quantite * 100) : 0;
+  double get coutTotal => coutOuvriers + coutTransport + coutMoulin + diversMontant;
+  double get revenuHuile => litresVente * prixVenteLitre;
+  double get revenuOlive => quantiteVente * prixVenteKg;
+  double get bilanRecolte => revenuHuile + revenuOlive - coutTotal;
 
   Map<String, dynamic> toMap() => {
         'id': id,
@@ -75,6 +106,17 @@ class Recolte {
         'quantiteInterne': quantiteInterne,
         'date': date.toIso8601String().split('T').first,
         'remarque': remarque,
+        'coutOuvriers': coutOuvriers,
+        'coutTransport': coutTransport,
+        'coutMoulin': coutMoulin,
+        'litresHuile': litresHuile,
+        'litresVente': litresVente,
+        'litresFamille': litresFamille,
+        'litresHeritiers': litresHeritiers,
+        'prixVenteLitre': prixVenteLitre,
+        'prixVenteKg': prixVenteKg,
+        'diversMontant': diversMontant,
+        'diversRemarque': diversRemarque,
       };
 
   factory Recolte.fromMap(Map<String, dynamic> map) => Recolte(
@@ -88,10 +130,64 @@ class Recolte {
         quantiteInterne: (map['quantiteInterne'] as num? ?? 0).toDouble(),
         date: DateTime.parse(map['date'] as String),
         remarque: (map['remarque'] ?? '') as String,
+        coutOuvriers: (map['coutOuvriers'] as num? ?? 0).toDouble(),
+        coutTransport: (map['coutTransport'] as num? ?? 0).toDouble(),
+        coutMoulin: (map['coutMoulin'] as num? ?? 0).toDouble(),
+        litresHuile: (map['litresHuile'] as num? ?? 0).toDouble(),
+        litresVente: (map['litresVente'] as num? ?? 0).toDouble(),
+        litresFamille: (map['litresFamille'] as num? ?? 0).toDouble(),
+        litresHeritiers: (map['litresHeritiers'] as num? ?? 0).toDouble(),
+        prixVenteLitre: (map['prixVenteLitre'] as num? ?? 0).toDouble(),
+        prixVenteKg: (map['prixVenteKg'] as num? ?? 0).toDouble(),
+        diversMontant: (map['diversMontant'] as num? ?? 0).toDouble(),
+        diversRemarque: (map['diversRemarque'] ?? '') as String,
       );
 
-  Recolte copyWith({String? fermeId, String? culture, int? saison, double? quantite, String? unite, double? quantiteVente, double? quantiteInterne, DateTime? date, String? remarque}) =>
-      Recolte(id: id, fermeId: fermeId ?? this.fermeId, culture: culture ?? this.culture, saison: saison ?? this.saison, quantite: quantite ?? this.quantite, unite: unite ?? this.unite, quantiteVente: quantiteVente ?? this.quantiteVente, quantiteInterne: quantiteInterne ?? this.quantiteInterne, date: date ?? this.date, remarque: remarque ?? this.remarque);
+  Recolte copyWith({
+    String? fermeId,
+    String? culture,
+    int? saison,
+    double? quantite,
+    String? unite,
+    double? quantiteVente,
+    double? quantiteInterne,
+    DateTime? date,
+    String? remarque,
+    double? coutOuvriers,
+    double? coutTransport,
+    double? coutMoulin,
+    double? litresHuile,
+    double? litresVente,
+    double? litresFamille,
+    double? litresHeritiers,
+    double? prixVenteLitre,
+    double? prixVenteKg,
+    double? diversMontant,
+    String? diversRemarque,
+  }) =>
+      Recolte(
+        id: id,
+        fermeId: fermeId ?? this.fermeId,
+        culture: culture ?? this.culture,
+        saison: saison ?? this.saison,
+        quantite: quantite ?? this.quantite,
+        unite: unite ?? this.unite,
+        quantiteVente: quantiteVente ?? this.quantiteVente,
+        quantiteInterne: quantiteInterne ?? this.quantiteInterne,
+        date: date ?? this.date,
+        remarque: remarque ?? this.remarque,
+        coutOuvriers: coutOuvriers ?? this.coutOuvriers,
+        coutTransport: coutTransport ?? this.coutTransport,
+        coutMoulin: coutMoulin ?? this.coutMoulin,
+        litresHuile: litresHuile ?? this.litresHuile,
+        litresVente: litresVente ?? this.litresVente,
+        litresFamille: litresFamille ?? this.litresFamille,
+        litresHeritiers: litresHeritiers ?? this.litresHeritiers,
+        prixVenteLitre: prixVenteLitre ?? this.prixVenteLitre,
+        prixVenteKg: prixVenteKg ?? this.prixVenteKg,
+        diversMontant: diversMontant ?? this.diversMontant,
+        diversRemarque: diversRemarque ?? this.diversRemarque,
+      );
 }
 
 // ─── Trituration ─────────────────────────────────────────────────────────────
@@ -173,6 +269,7 @@ class TravailleurSession {
   final double salaireJournalier;
   final DateTime date;
   final String remarque;
+  final String activite;
 
   TravailleurSession({
     String? id,
@@ -182,6 +279,7 @@ class TravailleurSession {
     required this.salaireJournalier,
     required this.date,
     this.remarque = '',
+    this.activite = 'general',
   }) : id = id ?? _uuid.v4();
 
   double get total => nbJours * salaireJournalier;
@@ -194,6 +292,7 @@ class TravailleurSession {
         'salaireJournalier': salaireJournalier,
         'date': date.toIso8601String().split('T').first,
         'remarque': remarque,
+        'activite': activite,
       };
 
   factory TravailleurSession.fromMap(Map<String, dynamic> map) =>
@@ -205,10 +304,28 @@ class TravailleurSession {
         salaireJournalier: (map['salaireJournalier'] as num).toDouble(),
         date: DateTime.parse(map['date'] as String),
         remarque: (map['remarque'] ?? '') as String,
+        activite: (map['activite'] ?? 'general') as String,
       );
 
-  TravailleurSession copyWith({String? fermeId, String? nom, double? nbJours, double? salaireJournalier, DateTime? date, String? remarque}) =>
-      TravailleurSession(id: id, fermeId: fermeId ?? this.fermeId, nom: nom ?? this.nom, nbJours: nbJours ?? this.nbJours, salaireJournalier: salaireJournalier ?? this.salaireJournalier, date: date ?? this.date, remarque: remarque ?? this.remarque);
+  TravailleurSession copyWith({
+    String? fermeId,
+    String? nom,
+    double? nbJours,
+    double? salaireJournalier,
+    DateTime? date,
+    String? remarque,
+    String? activite,
+  }) =>
+      TravailleurSession(
+        id: id,
+        fermeId: fermeId ?? this.fermeId,
+        nom: nom ?? this.nom,
+        nbJours: nbJours ?? this.nbJours,
+        salaireJournalier: salaireJournalier ?? this.salaireJournalier,
+        date: date ?? this.date,
+        remarque: remarque ?? this.remarque,
+        activite: activite ?? this.activite,
+      );
 }
 
 // ─── RecurringExpense ─────────────────────────────────────────────────────────

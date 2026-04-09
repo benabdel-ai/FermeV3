@@ -29,7 +29,7 @@ class DatabaseService {
 
     return openDatabase(
       path,
-      version: 4,
+      version: 5,
       onCreate: (database, version) async {
         await database.execute('''
           CREATE TABLE mouvements (
@@ -87,6 +87,20 @@ class DatabaseService {
           await _createCategoriesTable(database);
           await _seedCategories(database);
         }
+        if (oldVersion < 5) {
+          await database.execute("ALTER TABLE recoltes ADD COLUMN coutOuvriers REAL NOT NULL DEFAULT 0");
+          await database.execute("ALTER TABLE recoltes ADD COLUMN coutTransport REAL NOT NULL DEFAULT 0");
+          await database.execute("ALTER TABLE recoltes ADD COLUMN coutMoulin REAL NOT NULL DEFAULT 0");
+          await database.execute("ALTER TABLE recoltes ADD COLUMN litresHuile REAL NOT NULL DEFAULT 0");
+          await database.execute("ALTER TABLE recoltes ADD COLUMN litresVente REAL NOT NULL DEFAULT 0");
+          await database.execute("ALTER TABLE recoltes ADD COLUMN litresFamille REAL NOT NULL DEFAULT 0");
+          await database.execute("ALTER TABLE recoltes ADD COLUMN litresHeritiers REAL NOT NULL DEFAULT 0");
+          await database.execute("ALTER TABLE recoltes ADD COLUMN prixVenteLitre REAL NOT NULL DEFAULT 0");
+          await database.execute("ALTER TABLE recoltes ADD COLUMN prixVenteKg REAL NOT NULL DEFAULT 0");
+          await database.execute("ALTER TABLE recoltes ADD COLUMN diversMontant REAL NOT NULL DEFAULT 0");
+          await database.execute("ALTER TABLE recoltes ADD COLUMN diversRemarque TEXT DEFAULT ''");
+          await database.execute("ALTER TABLE travailleur_sessions ADD COLUMN activite TEXT NOT NULL DEFAULT 'general'");
+        }
       },
     );
   }
@@ -122,7 +136,18 @@ class DatabaseService {
         quantiteVente REAL NOT NULL DEFAULT 0,
         quantiteInterne REAL NOT NULL DEFAULT 0,
         date TEXT NOT NULL,
-        remarque TEXT DEFAULT ''
+        remarque TEXT DEFAULT '',
+        coutOuvriers REAL NOT NULL DEFAULT 0,
+        coutTransport REAL NOT NULL DEFAULT 0,
+        coutMoulin REAL NOT NULL DEFAULT 0,
+        litresHuile REAL NOT NULL DEFAULT 0,
+        litresVente REAL NOT NULL DEFAULT 0,
+        litresFamille REAL NOT NULL DEFAULT 0,
+        litresHeritiers REAL NOT NULL DEFAULT 0,
+        prixVenteLitre REAL NOT NULL DEFAULT 0,
+        prixVenteKg REAL NOT NULL DEFAULT 0,
+        diversMontant REAL NOT NULL DEFAULT 0,
+        diversRemarque TEXT DEFAULT ''
       )
     ''');
 
@@ -151,7 +176,8 @@ class DatabaseService {
         nbJours REAL NOT NULL,
         salaireJournalier REAL NOT NULL,
         date TEXT NOT NULL,
-        remarque TEXT DEFAULT ''
+        remarque TEXT DEFAULT '',
+        activite TEXT NOT NULL DEFAULT 'general'
       )
     ''');
 
