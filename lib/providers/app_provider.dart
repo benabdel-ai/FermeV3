@@ -376,10 +376,15 @@ class AppProvider extends ChangeNotifier {
 
   // ─── CRUD AidMouton ────────────────────────────────────────────────────────
 
-  Future<void> addAidMouton(AidMouton mouton) async {
-    await _db.insertAidMouton(mouton);
-    aidMoutons = await _db.getAidMoutons();
-    notifyListeners();
+  Future<bool> addAidMouton(AidMouton mouton) async {
+    try {
+      await _db.insertAidMouton(mouton);
+      aidMoutons = await _db.getAidMoutons();
+      notifyListeners();
+      return true;
+    } catch (_) {
+      return false; // numéro déjà existant
+    }
   }
 
   Future<void> updateAidMouton(AidMouton mouton) async {
