@@ -10,6 +10,18 @@ class Mouvement {
   final String remarque;
   final String fermeId;
 
+  // Vente / Achat
+  final double prixUnitaire;
+  final double poids; // poids total en kg (pour vente)
+  final String acheteur; // pour vente
+  final String fournisseur; // pour achat
+
+  // Décès
+  final String cause;
+
+  // Naissance
+  final String mere;
+
   Mouvement({
     String? id,
     required this.type,
@@ -17,7 +29,16 @@ class Mouvement {
     required this.date,
     this.remarque = '',
     this.fermeId = 'rhamna',
+    this.prixUnitaire = 0,
+    this.poids = 0,
+    this.acheteur = '',
+    this.fournisseur = '',
+    this.cause = '',
+    this.mere = '',
   }) : id = id ?? _uuid.v4();
+
+  // Computed
+  double get montantTotal => prixUnitaire * qte;
 
   Map<String, dynamic> toMap() => {
         'id': id,
@@ -26,6 +47,12 @@ class Mouvement {
         'date': date.toIso8601String().split('T').first,
         'remarque': remarque,
         'fermeId': fermeId,
+        'prixUnitaire': prixUnitaire,
+        'poids': poids,
+        'acheteur': acheteur,
+        'fournisseur': fournisseur,
+        'cause': cause,
+        'mere': mere,
       };
 
   factory Mouvement.fromMap(Map<String, dynamic> map) => Mouvement(
@@ -35,6 +62,12 @@ class Mouvement {
         date: DateTime.parse(map['date'] as String),
         remarque: (map['remarque'] ?? '') as String,
         fermeId: (map['fermeId'] ?? 'rhamna') as String,
+        prixUnitaire: (map['prixUnitaire'] as num? ?? 0).toDouble(),
+        poids: (map['poids'] as num? ?? 0).toDouble(),
+        acheteur: (map['acheteur'] ?? '') as String,
+        fournisseur: (map['fournisseur'] ?? '') as String,
+        cause: (map['cause'] ?? '') as String,
+        mere: (map['mere'] ?? '') as String,
       );
 
   String get label => mvtLabels[type] ?? type;

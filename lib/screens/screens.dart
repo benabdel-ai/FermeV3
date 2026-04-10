@@ -76,6 +76,24 @@ class _DashboardScreenState extends State<DashboardScreen> {
     for (final r in allRev) yearSet.add(r.date.year);
     final years = yearSet.toList()..sort();
 
+    // Activity-based data
+    final recoltes = provider.recoltes;
+    final sessions = provider.travailleurSessions;
+    final mouvements = provider.mouvements;
+
+    final recolteKg = recoltes.fold(0.0, (s, r) => s + r.quantite);
+    final recolteHuile = recoltes.fold(0.0, (s, r) => s + r.litresHuile);
+    final recolteBilan = recoltes.fold(0.0, (s, r) => s + r.bilanRecolte);
+
+    final cheptelVentes = mouvements
+        .where((m) => m.type.startsWith('vente'))
+        .fold(0.0, (s, m) => s + m.montantTotal);
+    final cheptelAchats = mouvements
+        .where((m) => m.type.startsWith('achat'))
+        .fold(0.0, (s, m) => s + m.montantTotal);
+
+    final equipeTotal = sessions.fold(0.0, (s, t) => s + t.total);
+
     // Recent items
     final recentMouvements = provider.mouvements.reversed.take(4).toList();
     final recentDepenses = provider.depensesFiltrees.take(2).toList();
@@ -179,6 +197,52 @@ class _DashboardScreenState extends State<DashboardScreen> {
               ],
             ),
           ),
+
+          // ── Activity overview ──────────────────────────────────────────
+          if (recolteKg > 0 || cheptelVentes > 0 || equipeTotal > 0)
+            Container(
+              margin: const EdgeInsets.only(bottom: 14),
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: AppColors.bg4,
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: AppColors.borderSoft),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  const Text(
+                    'VUE PAR ACTIVITÉ',
+                    style: TextStyle(fontSize: 11, fontWeight: FontWeight.w900, color: AppColors.text3, letterSpacing: 0.5),
+                  ),
+                  const SizedBox(height: 10),
+                  if (recolteKg > 0)
+                    _ActivityRow(
+                      emoji: '🫒',
+                      label: 'Récoltes',
+                      sub: '${recolteKg.toStringAsFixed(0)} kg · ${recolteHuile.toStringAsFixed(0)} L huile',
+                      amount: recolteBilan,
+                      isGain: recolteBilan >= 0,
+                    ),
+                  if (cheptelVentes > 0 || cheptelAchats > 0)
+                    _ActivityRow(
+                      emoji: '🐑',
+                      label: 'Cheptel',
+                      sub: 'Ventes: ${fmtMAD(cheptelVentes)} · Achats: ${fmtMAD(cheptelAchats)}',
+                      amount: cheptelVentes - cheptelAchats,
+                      isGain: cheptelVentes >= cheptelAchats,
+                    ),
+                  if (equipeTotal > 0)
+                    _ActivityRow(
+                      emoji: '👷',
+                      label: 'Équipe',
+                      sub: '${sessions.length} session(s) saisonnière(s)',
+                      amount: -equipeTotal,
+                      isGain: false,
+                    ),
+                ],
+              ),
+            ),
 
           // ── Compact cheptel row ────────────────────────────────────────
           GestureDetector(
@@ -363,6 +427,56 @@ class _DashboardScreenState extends State<DashboardScreen> {
 }
 
 // ── Dashboard sub-widgets ──────────────────────────────────────────────────────
+
+class _ActivityRow extends StatelessWidget {
+  const _ActivityRow({
+    required this.emoji,
+    required this.label,
+    required this.sub,
+    required this.amount,
+    required this.isGain,
+  });
+  final String emoji;
+  final String label;
+  final String sub;
+  final double amount;
+  final bool isGain;
+
+  @override
+  Widget build(BuildContext context) {
+    final amtColor = isGain ? AppColors.green2 : AppColors.red;
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Row(
+        children: <Widget>[
+          Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              color: AppColors.bg3,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Center(child: Text(emoji, style: const TextStyle(fontSize: 20))),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                Text(label, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: AppColors.text)),
+                Text(sub, style: const TextStyle(fontSize: 11, color: AppColors.text3)),
+              ],
+            ),
+          ),
+          Text(
+            '${amount >= 0 ? '+' : ''}${fmtMAD(amount)}',
+            style: TextStyle(fontSize: 13, fontWeight: FontWeight.w900, color: amtColor),
+          ),
+        ],
+      ),
+    );
+  }
+}
 
 class _DashHeroCol extends StatelessWidget {
   const _DashHeroCol({required this.label, required this.value, required this.color});
@@ -612,17 +726,26 @@ class CheptelScreen extends StatelessWidget {
                 if (provider.mouvements.isEmpty)
                   const EmptyState(emoji: '🐑', text: 'Aucun mouvement enregistré')
                 else
-                  ...provider.mouvements.reversed.take(20).map(
-                        (m) => HistoryItem(
-                          emoji: m.emoji,
-                          title: m.label,
-                          subtitle: '${fmtDate(m.date)}${m.remarque.isNotEmpty ? ' · ${m.remarque}' : ''}',
-                          value: '×${m.qte}',
-                          valueColor: mvtFgColor(m.color),
-                          bgColor: mvtBgColor(m.color),
-                          onDelete: () => _confirmDelete(context, () => context.read<AppProvider>().deleteMouvement(m.id)),
-                        ),
-                      ),
+                  ...provider.mouvements.reversed.take(20).map((m) {
+                    final details = <String>[fmtDate(m.date)];
+                    if (m.prixUnitaire > 0) details.add('${m.prixUnitaire.toStringAsFixed(0)} MAD/tête');
+                    if (m.montantTotal > 0) details.add('Total: ${fmtMAD(m.montantTotal)}');
+                    if (m.poids > 0) details.add('${m.poids.toStringAsFixed(0)} kg');
+                    if (m.acheteur.isNotEmpty) details.add('→ ${m.acheteur}');
+                    if (m.fournisseur.isNotEmpty) details.add('← ${m.fournisseur}');
+                    if (m.cause.isNotEmpty) details.add('Cause: ${m.cause}');
+                    if (m.mere.isNotEmpty) details.add('Mère: ${m.mere}');
+                    if (m.remarque.isNotEmpty) details.add(m.remarque);
+                    return HistoryItem(
+                      emoji: m.emoji,
+                      title: m.label,
+                      subtitle: details.join(' · '),
+                      value: '×${m.qte}',
+                      valueColor: mvtFgColor(m.color),
+                      bgColor: mvtBgColor(m.color),
+                      onDelete: () => _confirmDelete(context, () => context.read<AppProvider>().deleteMouvement(m.id)),
+                    );
+                  }),
               ],
             ),
           ),

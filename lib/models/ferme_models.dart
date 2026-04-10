@@ -64,6 +64,10 @@ class Recolte {
   final double diversMontant;
   final String diversRemarque;
 
+  // Caissons fields
+  final double nbCaissons;
+  final double prixCaisson;
+
   Recolte({
     String? id,
     required this.fermeId,
@@ -86,11 +90,14 @@ class Recolte {
     this.prixVenteKg = 0,
     this.diversMontant = 0,
     this.diversRemarque = '',
+    this.nbCaissons = 0,
+    this.prixCaisson = 0,
   }) : id = id ?? _uuid.v4();
 
   // Computed getters
   double get rendementPct => quantite > 0 ? (litresHuile / quantite * 100) : 0;
-  double get coutTotal => coutOuvriers + coutTransport + coutMoulin + diversMontant;
+  double get coutCaissons => nbCaissons * prixCaisson;
+  double get coutTotal => coutOuvriers + coutTransport + coutMoulin + diversMontant + coutCaissons;
   double get revenuHuile => litresVente * prixVenteLitre;
   double get revenuOlive => quantiteVente * prixVenteKg;
   double get bilanRecolte => revenuHuile + revenuOlive - coutTotal;
@@ -117,6 +124,8 @@ class Recolte {
         'prixVenteKg': prixVenteKg,
         'diversMontant': diversMontant,
         'diversRemarque': diversRemarque,
+        'nbCaissons': nbCaissons,
+        'prixCaisson': prixCaisson,
       };
 
   factory Recolte.fromMap(Map<String, dynamic> map) => Recolte(
@@ -141,6 +150,8 @@ class Recolte {
         prixVenteKg: (map['prixVenteKg'] as num? ?? 0).toDouble(),
         diversMontant: (map['diversMontant'] as num? ?? 0).toDouble(),
         diversRemarque: (map['diversRemarque'] ?? '') as String,
+        nbCaissons: (map['nbCaissons'] as num? ?? 0).toDouble(),
+        prixCaisson: (map['prixCaisson'] as num? ?? 0).toDouble(),
       );
 
   Recolte copyWith({
@@ -164,6 +175,8 @@ class Recolte {
     double? prixVenteKg,
     double? diversMontant,
     String? diversRemarque,
+    double? nbCaissons,
+    double? prixCaisson,
   }) =>
       Recolte(
         id: id,
@@ -187,6 +200,8 @@ class Recolte {
         prixVenteKg: prixVenteKg ?? this.prixVenteKg,
         diversMontant: diversMontant ?? this.diversMontant,
         diversRemarque: diversRemarque ?? this.diversRemarque,
+        nbCaissons: nbCaissons ?? this.nbCaissons,
+        prixCaisson: prixCaisson ?? this.prixCaisson,
       );
 }
 

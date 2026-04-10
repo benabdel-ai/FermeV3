@@ -30,8 +30,17 @@ class _MvtFormState extends State<_MvtForm> {
   int _qte = 1;
   DateTime _date = DateTime.now();
   String _rem = '';
+  String _fermeId = 'rhamna';
 
-  final List<(String, String)> _types = const <(String, String)>[
+  // Extra fields by type
+  double _prixUnitaire = 0;
+  double _poids = 0;
+  String _acheteur = '';
+  String _fournisseur = '';
+  String _cause = '';
+  String _mere = '';
+
+  static const List<(String, String)> _types = <(String, String)>[
     ('naissance_agf', '🍼 Naissance Agneau ♀'),
     ('naissance_agm', '🐣 Naissance Agneau ♂'),
     ('achat_femelle', '🛒 Achat Femelle'),
@@ -48,11 +57,20 @@ class _MvtFormState extends State<_MvtForm> {
     ('init_agm', '⚙️ Stock initial Agneaux ♂'),
   ];
 
+  bool get _isVente => _type.startsWith('vente');
+  bool get _isAchat => _type.startsWith('achat');
+  bool get _isDeces => _type.startsWith('deces');
+  bool get _isNaissance => _type.startsWith('naissance');
+
   @override
   void initState() {
     super.initState();
     _type = widget.initialType ?? 'naissance_agf';
+    final filter = context.read<AppProvider>().fermeFilter;
+    _fermeId = filter == 'all' ? 'rhamna' : filter;
   }
+
+  double _parseD(String? v) => double.tryParse((v ?? '').replaceAll(',', '.')) ?? 0;
 
   @override
   Widget build(BuildContext context) {
@@ -61,16 +79,15 @@ class _MvtFormState extends State<_MvtForm> {
       child: Form(
         key: _formKey,
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: <Widget>[
+            _label('Ferme'),
+            _FermeSelector(value: _fermeId, onChanged: (v) => setState(() => _fermeId = v)),
+            const SizedBox(height: 14),
             _label('Type de mouvement'),
             _dropdown<String>(
               _types
-                  .map(
-                    (entry) => DropdownMenuItem<String>(
-                      value: entry.$1,
-                      child: Text(entry.$2),
-                    ),
-                  )
+                  .map((entry) => DropdownMenuItem<String>(value: entry.$1, child: Text(entry.$2)))
                   .toList(),
               _type,
               (value) => setState(() => _type = value ?? _type),
@@ -82,16 +99,14 @@ class _MvtFormState extends State<_MvtForm> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: <Widget>[
-                      _label('Quantité'),
+                      _label('Quantité (têtes)'),
                       TextFormField(
                         initialValue: '1',
                         keyboardType: TextInputType.number,
                         decoration: const InputDecoration(prefixText: '× '),
                         validator: (value) {
                           final parsed = int.tryParse(value ?? '');
-                          if (parsed == null || parsed < 1) {
-                            return 'Quantité invalide';
-                          }
+                          if (parsed == null || parsed < 1) return 'Invalide';
                           return null;
                         },
                         onSaved: (value) => _qte = int.tryParse(value ?? '') ?? 1,
@@ -101,14 +116,132 @@ class _MvtFormState extends State<_MvtForm> {
                 ),
                 const SizedBox(width: 12),
                 Expanded(
-                  child: _DateField(
-                    label: 'Date',
-                    value: _date,
-                    onChanged: (date) => setState(() => _date = date),
-                  ),
+                  child: _DateField(label: 'Date', value: _date, onChanged: (d) => setState(() => _date = d)),
                 ),
               ],
             ),
+
+            // ── Vente fields ──
+            if (_isVente) ...<Widget>[
+              const _SectionHeader('🤝 Détails de la vente'),
+              Row(
+                children: <Widget>[
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: <Widget>[
+                        _label('Prix unitaire (MAD)'),
+                        TextFormField(
+                          keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                          decoration: const InputDecoration(suffixText: 'MAD'),
+                          onChanged: (v) => setState(() => _prixUnitaire = _parseD(v)),
+                          onSaved: (v) => _prixUnitaire = _parseD(v),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: <Widget>[
+                        _label('Poids total (kg)'),
+                        TextFormField(
+                          keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                          decoration: const InputDecoration(suffixText: 'kg'),
+                          onSaved: (v) => _poids = _parseD(v),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 10),
+              _label('Acheteur'),
+              TextFormField(
+                decoration: const InputDecoration(hintText: 'Nom de l\'acheteur (opt.)'),
+                onSaved: (v) => _acheteur = v?.trim() ?? '',
+              ),
+              if (_prixUnitaire > 0 && _qte > 0)
+                Padding(
+                  padding: const EdgeInsets.only(top: 8),
+                  child: Text(
+                    '💰 Total vente : ${(_prixUnitaire * _qte).toStringAsFixed(0)} MAD',
+                    style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: AppColors.green2),
+                  ),
+                ),
+            ],
+
+            // ── Achat fields ──
+            if (_isAchat) ...<Widget>[
+              const _SectionHeader('🛒 Détails de l\'achat'),
+              Row(
+                children: <Widget>[
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: <Widget>[
+                        _label('Prix unitaire (MAD)'),
+                        TextFormField(
+                          keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                          decoration: const InputDecoration(suffixText: 'MAD'),
+                          onChanged: (v) => setState(() => _prixUnitaire = _parseD(v)),
+                          onSaved: (v) => _prixUnitaire = _parseD(v),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: <Widget>[
+                        _label('Poids total (kg)'),
+                        TextFormField(
+                          keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                          decoration: const InputDecoration(suffixText: 'kg'),
+                          onSaved: (v) => _poids = _parseD(v),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 10),
+              _label('Fournisseur'),
+              TextFormField(
+                decoration: const InputDecoration(hintText: 'Nom du fournisseur (opt.)'),
+                onSaved: (v) => _fournisseur = v?.trim() ?? '',
+              ),
+              if (_prixUnitaire > 0 && _qte > 0)
+                Padding(
+                  padding: const EdgeInsets.only(top: 8),
+                  child: Text(
+                    '💸 Total achat : ${(_prixUnitaire * _qte).toStringAsFixed(0)} MAD',
+                    style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: AppColors.orange),
+                  ),
+                ),
+            ],
+
+            // ── Décès fields ──
+            if (_isDeces) ...<Widget>[
+              const _SectionHeader('💀 Cause du décès'),
+              TextFormField(
+                decoration: const InputDecoration(hintText: 'Maladie, accident, autre...'),
+                onSaved: (v) => _cause = v?.trim() ?? '',
+              ),
+            ],
+
+            // ── Naissance fields ──
+            if (_isNaissance) ...<Widget>[
+              const _SectionHeader('🍼 Détails naissance'),
+              _label('Mère (opt.)'),
+              TextFormField(
+                decoration: const InputDecoration(hintText: 'Identification ou nom de la mère'),
+                onSaved: (v) => _mere = v?.trim() ?? '',
+              ),
+            ],
+
             const SizedBox(height: 14),
             _label('Remarque'),
             TextFormField(
@@ -131,10 +264,7 @@ class _MvtFormState extends State<_MvtForm> {
   }
 
   Future<void> _save() async {
-    if (!_formKey.currentState!.validate()) {
-      return;
-    }
-
+    if (!_formKey.currentState!.validate()) return;
     _formKey.currentState!.save();
 
     await context.read<AppProvider>().addMouvement(
@@ -143,12 +273,17 @@ class _MvtFormState extends State<_MvtForm> {
             qte: _qte,
             date: _date,
             remarque: _rem,
+            fermeId: _fermeId,
+            prixUnitaire: _prixUnitaire,
+            poids: _poids,
+            acheteur: _acheteur,
+            fournisseur: _fournisseur,
+            cause: _cause,
+            mere: _mere,
           ),
         );
 
-    if (!mounted) {
-      return;
-    }
+    if (!mounted) return;
 
     Navigator.pop(context);
     ScaffoldMessenger.of(context).showSnackBar(
@@ -587,12 +722,17 @@ class _RecolteFormState extends State<_RecolteForm> {
   double _diversMontant = 0;
   String _diversRemarque = '';
 
+  // Caissons fields
+  double _nbCaissons = 0;
+  double _prixCaisson = 0;
+
   String _remarque = '';
 
   bool get _showTrituration => _culture == 'Olives' || _culture == "Huile d'olive";
 
   double get _rendement => _quantite > 0 ? (_litresHuile / _quantite * 100) : 0;
-  double get _coutTotal => _coutOuvriers + _coutTransport + _coutMoulin + _diversMontant;
+  double get _coutCaissons => _nbCaissons * _prixCaisson;
+  double get _coutTotal => _coutOuvriers + _coutTransport + _coutMoulin + _diversMontant + _coutCaissons;
   double get _revenuHuile => _litresVente * _prixVenteLitre;
   double get _revenuOlive => _quantiteVente * _prixVenteKg;
   double get _bilan => _revenuHuile + _revenuOlive - _coutTotal;
@@ -622,6 +762,8 @@ class _RecolteFormState extends State<_RecolteForm> {
       _coutTransport = r.coutTransport;
       _diversMontant = r.diversMontant;
       _diversRemarque = r.diversRemarque;
+      _nbCaissons = r.nbCaissons;
+      _prixCaisson = r.prixCaisson;
       _remarque = r.remarque;
     }
   }
@@ -847,6 +989,51 @@ class _RecolteFormState extends State<_RecolteForm> {
 
             // Section Coûts
             const _SectionHeader('💰 Coûts'),
+            // Caissons row
+            Row(
+              children: <Widget>[
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: <Widget>[
+                      _label('Nb caissons'),
+                      TextFormField(
+                        initialValue: _nbCaissons > 0 ? _nbCaissons.toStringAsFixed(0) : '',
+                        keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                        decoration: const InputDecoration(suffixText: 'caisses'),
+                        onChanged: (v) => setState(() => _nbCaissons = _parseField(v)),
+                        onSaved: (v) => _nbCaissons = _parseField(v),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: <Widget>[
+                      _label('Prix / caisson (MAD)'),
+                      TextFormField(
+                        initialValue: _prixCaisson > 0 ? _prixCaisson.toString() : '',
+                        keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                        decoration: const InputDecoration(suffixText: 'MAD'),
+                        onChanged: (v) => setState(() => _prixCaisson = _parseField(v)),
+                        onSaved: (v) => _prixCaisson = _parseField(v),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            if (_coutCaissons > 0)
+              Padding(
+                padding: const EdgeInsets.only(top: 6, bottom: 4),
+                child: Text(
+                  '📦 Total caissons : ${_coutCaissons.toStringAsFixed(0)} MAD',
+                  style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: AppColors.text2),
+                ),
+              ),
+            const SizedBox(height: 12),
             Row(
               children: <Widget>[
                 Expanded(
@@ -929,9 +1116,13 @@ class _RecolteFormState extends State<_RecolteForm> {
               ),
               child: Column(
                 children: <Widget>[
-                  _resumeLine('Revenu huile', _revenuHuile, AppColors.green2),
-                  _resumeLine('Revenu olive', _revenuOlive, AppColors.green2),
-                  _resumeLine('Coût total', -_coutTotal, AppColors.red),
+                  if (_revenuHuile > 0) _resumeLine('Revenu huile', _revenuHuile, AppColors.green2),
+                  if (_revenuOlive > 0) _resumeLine('Revenu olive', _revenuOlive, AppColors.green2),
+                  if (_coutCaissons > 0) _resumeLine('Caissons', -_coutCaissons, AppColors.orange),
+                  if (_coutOuvriers > 0) _resumeLine('Ouvriers', -_coutOuvriers, AppColors.orange),
+                  if (_coutTransport > 0) _resumeLine('Transport', -_coutTransport, AppColors.orange),
+                  if (_coutMoulin > 0) _resumeLine('Moulin', -_coutMoulin, AppColors.orange),
+                  if (_diversMontant > 0) _resumeLine('Divers', -_diversMontant, AppColors.orange),
                   const Divider(color: AppColors.border),
                   _resumeLine('Bilan', _bilan, _bilan >= 0 ? AppColors.green2 : AppColors.red, bold: true),
                 ],
@@ -1001,6 +1192,8 @@ class _RecolteFormState extends State<_RecolteForm> {
       prixVenteKg: _prixVenteKg,
       diversMontant: _diversMontant,
       diversRemarque: _diversRemarque,
+      nbCaissons: _nbCaissons,
+      prixCaisson: _prixCaisson,
     );
 
     if (widget.initial != null) {

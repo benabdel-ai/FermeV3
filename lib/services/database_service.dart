@@ -29,7 +29,7 @@ class DatabaseService {
 
     return openDatabase(
       path,
-      version: 5,
+      version: 7,
       onCreate: (database, version) async {
         await database.execute('''
           CREATE TABLE mouvements (
@@ -38,7 +38,13 @@ class DatabaseService {
             qte INTEGER NOT NULL,
             date TEXT NOT NULL,
             remarque TEXT DEFAULT '',
-            fermeId TEXT NOT NULL DEFAULT 'rhamna'
+            fermeId TEXT NOT NULL DEFAULT 'rhamna',
+            prixUnitaire REAL NOT NULL DEFAULT 0,
+            poids REAL NOT NULL DEFAULT 0,
+            acheteur TEXT DEFAULT '',
+            fournisseur TEXT DEFAULT '',
+            cause TEXT DEFAULT '',
+            mere TEXT DEFAULT ''
           )
         ''');
 
@@ -101,6 +107,18 @@ class DatabaseService {
           await database.execute("ALTER TABLE recoltes ADD COLUMN diversRemarque TEXT DEFAULT ''");
           await database.execute("ALTER TABLE travailleur_sessions ADD COLUMN activite TEXT NOT NULL DEFAULT 'general'");
         }
+        if (oldVersion < 6) {
+          await database.execute("ALTER TABLE recoltes ADD COLUMN nbCaissons REAL NOT NULL DEFAULT 0");
+          await database.execute("ALTER TABLE recoltes ADD COLUMN prixCaisson REAL NOT NULL DEFAULT 0");
+        }
+        if (oldVersion < 7) {
+          await database.execute("ALTER TABLE mouvements ADD COLUMN prixUnitaire REAL NOT NULL DEFAULT 0");
+          await database.execute("ALTER TABLE mouvements ADD COLUMN poids REAL NOT NULL DEFAULT 0");
+          await database.execute("ALTER TABLE mouvements ADD COLUMN acheteur TEXT DEFAULT ''");
+          await database.execute("ALTER TABLE mouvements ADD COLUMN fournisseur TEXT DEFAULT ''");
+          await database.execute("ALTER TABLE mouvements ADD COLUMN cause TEXT DEFAULT ''");
+          await database.execute("ALTER TABLE mouvements ADD COLUMN mere TEXT DEFAULT ''");
+        }
       },
     );
   }
@@ -147,7 +165,9 @@ class DatabaseService {
         prixVenteLitre REAL NOT NULL DEFAULT 0,
         prixVenteKg REAL NOT NULL DEFAULT 0,
         diversMontant REAL NOT NULL DEFAULT 0,
-        diversRemarque TEXT DEFAULT ''
+        diversRemarque TEXT DEFAULT '',
+        nbCaissons REAL NOT NULL DEFAULT 0,
+        prixCaisson REAL NOT NULL DEFAULT 0
       )
     ''');
 

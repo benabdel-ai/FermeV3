@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../models/ferme_models.dart';
 import '../providers/app_provider.dart';
 import '../theme.dart';
+import '../widgets/form_sheet.dart';
 import '../widgets/widgets.dart';
 
 class EquipeScreen extends StatelessWidget {
@@ -11,13 +12,14 @@ class EquipeScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
-      child: const Column(
+    return const SingleChildScrollView(
+      padding: EdgeInsets.fromLTRB(16, 0, 16, 24),
+      child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
           FermeFilterBar(),
-          SectionTitle('Equipe', sub: 'Salaries fixes et saisonniers'),
+          SectionTitle('👷 Équipe', sub: 'Ouvriers par activité — salariés fixes & saisonniers'),
+          _ActivitySummary(),
           _RecurringSection(),
           _SessionsSection(),
         ],
@@ -25,6 +27,108 @@ class EquipeScreen extends StatelessWidget {
     );
   }
 }
+
+// ─── Activity summary (totals per activité) ────────────────────────────────────
+
+class _ActivitySummary extends StatelessWidget {
+  const _ActivitySummary();
+
+  static const Map<String, String> _actLabels = <String, String>{
+    'general': '🔧 Général',
+    'recolte': '🫒 Récolte',
+    'elevage': '🐑 Élevage',
+    'cultures': '🌿 Cultures',
+    'entretien': '🏗️ Entretien',
+  };
+
+  @override
+  Widget build(BuildContext context) {
+    final sessions = context.watch<AppProvider>().sessionsFiltrees;
+    if (sessions.isEmpty) return const SizedBox.shrink();
+
+    // Group totals by activite
+    final byActivite = <String, double>{};
+    for (final s in sessions) {
+      byActivite[s.activite] = (byActivite[s.activite] ?? 0) + s.total;
+    }
+
+    final totalGeneral = sessions.fold(0.0, (sum, s) => sum + s.total);
+
+    return AppCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: <Widget>[
+              const CardTitle('📊 RAPPORT PAR ACTIVITÉ'),
+              Text(
+                fmtMAD(totalGeneral),
+                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w900, color: AppColors.red),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          ...byActivite.entries.map((e) {
+            final pct = totalGeneral > 0 ? e.value / totalGeneral : 0.0;
+            final label = _actLabels[e.key] ?? e.key;
+            return _ActivityBar(label: label, montant: e.value, pct: pct);
+          }),
+        ],
+      ),
+    );
+  }
+}
+
+class _ActivityBar extends StatelessWidget {
+  const _ActivityBar({required this.label, required this.montant, required this.pct});
+  final String label;
+  final double montant;
+  final double pct;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: <Widget>[
+              Text(label, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: AppColors.text)),
+              Row(
+                children: <Widget>[
+                  Text(
+                    '${(pct * 100).toStringAsFixed(0)}%',
+                    style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: AppColors.text3),
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    fmtMAD(montant),
+                    style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w900, color: AppColors.red),
+                  ),
+                ],
+              ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(4),
+            child: LinearProgressIndicator(
+              value: pct.clamp(0.0, 1.0),
+              minHeight: 7,
+              backgroundColor: AppColors.bg4,
+              valueColor: const AlwaysStoppedAnimation<Color>(AppColors.orange),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ─── Recurring salaries section ────────────────────────────────────────────────
 
 class _RecurringSection extends StatelessWidget {
   const _RecurringSection();
@@ -41,7 +145,7 @@ class _RecurringSection extends StatelessWidget {
         children: <Widget>[
           Row(
             children: <Widget>[
-              const Expanded(child: CardTitle('SALARIES FIXES - HEBDOMADAIRE')),
+              const Expanded(child: CardTitle('💼 SALARIÉS FIXES — HEBDOMADAIRE')),
               if (dueCount > 0)
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
@@ -50,18 +154,18 @@ class _RecurringSection extends StatelessWidget {
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Text(
-                    '$dueCount a payer',
+                    '$dueCount à payer',
                     style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w900, color: AppColors.red),
                   ),
                 ),
             ],
           ),
           AddButton(
-            label: 'Ajouter un salarie fixe',
+            label: '+ Ajouter un salarié fixe',
             onTap: () => _showRecurringForm(context),
           ),
           if (recurring.isEmpty)
-            const EmptyState(emoji: '', text: 'Aucun salarie fixe configure')
+            const EmptyState(emoji: '👷', text: 'Aucun salarié fixe configuré')
           else
             ...recurring.map((re) => _RecurringItem(re: re)),
         ],
@@ -72,7 +176,6 @@ class _RecurringSection extends StatelessWidget {
 
 class _RecurringItem extends StatelessWidget {
   const _RecurringItem({required this.re});
-
   final RecurringExpense re;
 
   @override
@@ -112,8 +215,8 @@ class _RecurringItem extends StatelessWidget {
             ),
             child: Center(
               child: Text(
-                !re.actif ? '||' : isDue ? '!' : 'OK',
-                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w900),
+                !re.actif ? '⏸' : isDue ? '!' : '✓',
+                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w900),
               ),
             ),
           ),
@@ -140,7 +243,7 @@ class _RecurringItem extends StatelessWidget {
                 ),
                 if (re.lastPaidAt != null)
                   Text(
-                    'Paye le ${fmtDate(re.lastPaidAt!)}',
+                    'Payé le ${fmtDate(re.lastPaidAt!)}',
                     style: const TextStyle(fontSize: 11, color: AppColors.text3),
                   ),
                 const SizedBox(height: 4),
@@ -202,6 +305,8 @@ class _RecurringItem extends StatelessWidget {
   }
 }
 
+// ─── Sessions section ─────────────────────────────────────────────────────────
+
 class _SessionsSection extends StatelessWidget {
   const _SessionsSection();
 
@@ -215,21 +320,23 @@ class _SessionsSection extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
-          const CardTitle('SAISONNIERS'),
-          if (sessions.isNotEmpty)
-            Padding(
-              padding: const EdgeInsets.only(bottom: 12),
-              child: Text(
-                'Total main d oeuvre : ${fmtMAD(totalPaye)}',
-                style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w900, color: AppColors.red),
-              ),
-            ),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: <Widget>[
+              const CardTitle('🗓️ SAISONNIERS & SESSIONS'),
+              if (sessions.isNotEmpty)
+                Text(
+                  '-${fmtMAD(totalPaye)}',
+                  style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w900, color: AppColors.red),
+                ),
+            ],
+          ),
           AddButton(
-            label: 'Enregistrer une session',
-            onTap: () => _showSessionForm(context),
+            label: '+ Enregistrer une session',
+            onTap: () => showTravailleurForm(context),
           ),
           if (sessions.isEmpty)
-            const EmptyState(emoji: '', text: 'Aucune session enregistree')
+            const EmptyState(emoji: '🗓️', text: 'Aucune session enregistrée')
           else
             ...sessions.map((s) => _SessionItem(s: s)),
         ],
@@ -238,14 +345,31 @@ class _SessionsSection extends StatelessWidget {
   }
 }
 
+const Map<String, String> _actEmojis = <String, String>{
+  'general': '🔧',
+  'recolte': '🫒',
+  'elevage': '🐑',
+  'cultures': '🌿',
+  'entretien': '🏗️',
+};
+
+const Map<String, Color> _actColors = <String, Color>{
+  'general': Color(0xFF78909C),
+  'recolte': Color(0xFF4CAF50),
+  'elevage': Color(0xFF8D6E63),
+  'cultures': Color(0xFF66BB6A),
+  'entretien': Color(0xFF42A5F5),
+};
+
 class _SessionItem extends StatelessWidget {
   const _SessionItem({required this.s});
-
   final TravailleurSession s;
 
   @override
   Widget build(BuildContext context) {
     final joursStr = s.nbJours % 1 == 0 ? '${s.nbJours.toInt()}' : s.nbJours.toStringAsFixed(1);
+    final actEmoji = _actEmojis[s.activite] ?? '🔧';
+    final actColor = _actColors[s.activite] ?? AppColors.text3;
 
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
@@ -256,18 +380,46 @@ class _SessionItem extends StatelessWidget {
       ),
       child: ListTile(
         contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+        leading: Container(
+          width: 46,
+          height: 46,
+          decoration: BoxDecoration(
+            color: actColor.withValues(alpha: 0.12),
+            borderRadius: BorderRadius.circular(14),
+          ),
+          child: Center(child: Text(actEmoji, style: const TextStyle(fontSize: 22))),
+        ),
         title: Text(s.nom, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w900)),
         subtitle: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: <Widget>[
             Text(
-              '$joursStr j x ${fmtMAD(s.salaireJournalier)}/j - ${fmtDate(s.date)}',
+              '$joursStr j × ${fmtMAD(s.salaireJournalier)}/j · ${fmtDate(s.date)}',
               style: const TextStyle(fontSize: 12, color: AppColors.text3),
             ),
-            if (s.remarque.isNotEmpty)
-              Text(s.remarque, style: const TextStyle(fontSize: 11, color: AppColors.text3)),
             const SizedBox(height: 4),
-            FermeBadge(s.fermeId),
+            Row(
+              children: <Widget>[
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: actColor.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Text(
+                    '$actEmoji ${s.activite}',
+                    style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: actColor),
+                  ),
+                ),
+                const SizedBox(width: 6),
+                FermeBadge(s.fermeId),
+              ],
+            ),
+            if (s.remarque.isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.only(top: 3),
+                child: Text(s.remarque, style: const TextStyle(fontSize: 11, color: AppColors.text3)),
+              ),
           ],
         ),
         trailing: Column(
@@ -296,6 +448,8 @@ class _SessionItem extends StatelessWidget {
     );
   }
 }
+
+// ─── Shared helpers ────────────────────────────────────────────────────────────
 
 void _confirmDelete(BuildContext context, VoidCallback onConfirm) {
   showDialog<void>(
@@ -383,26 +537,35 @@ class _RecurringFormState extends State<_RecurringFormSheet> {
           children: <Widget>[
             _handle(),
             const SizedBox(height: 18),
-            const Text('Ajouter un salarie fixe', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900, color: AppColors.green2)),
+            const Text(
+              '💼 Ajouter un salarié fixe',
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900, color: AppColors.green2),
+            ),
             const SizedBox(height: 6),
-            const Text('Le bouton "Payer" apparaitra chaque semaine', style: TextStyle(fontSize: 12, color: AppColors.text3, fontWeight: FontWeight.w700)),
+            const Text(
+              'Le bouton "Payer" apparaîtra chaque semaine',
+              style: TextStyle(fontSize: 12, color: AppColors.text3, fontWeight: FontWeight.w700),
+            ),
             const SizedBox(height: 18),
             TextFormField(
               controller: _labelCtrl,
-              decoration: const InputDecoration(labelText: 'Nom du salarie *'),
+              decoration: const InputDecoration(labelText: 'Nom du salarié *'),
               validator: (v) => (v == null || v.isEmpty) ? 'Requis' : null,
             ),
             const SizedBox(height: 12),
             TextFormField(
               controller: _montantCtrl,
               keyboardType: const TextInputType.numberWithOptions(decimal: true),
-              decoration: const InputDecoration(labelText: 'Salaire hebdomadaire MAD *'),
+              decoration: const InputDecoration(labelText: 'Salaire hebdomadaire (MAD) *', suffixText: 'MAD'),
               validator: (v) => (v == null || v.isEmpty) ? 'Requis' : null,
             ),
             const SizedBox(height: 12),
             _fermePicker(),
             const SizedBox(height: 20),
-            SizedBox(width: double.infinity, child: ElevatedButton(onPressed: _save, child: const Text('Enregistrer'))),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(onPressed: _save, child: const Text('Enregistrer')),
+            ),
           ],
         ),
       ),
@@ -419,9 +582,9 @@ class _RecurringFormState extends State<_RecurringFormSheet> {
 
   Widget _fermePicker() => Row(
         children: <Widget>[
-          _fermeBtn('Rhamna', 'rhamna'),
+          _fermeBtn('🐑 Rhamna', 'rhamna'),
           const SizedBox(width: 10),
-          _fermeBtn('Srahna', 'srahna'),
+          _fermeBtn('🫒 Srahna', 'srahna'),
         ],
       );
 
@@ -439,184 +602,14 @@ class _RecurringFormState extends State<_RecurringFormSheet> {
             border: Border.all(color: sel ? AppColors.green2 : AppColors.border),
           ),
           child: Center(
-            child: Text(label, style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: sel ? Colors.white : AppColors.text2)),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-void _showSessionForm(BuildContext context) {
-  showModalBottomSheet<void>(
-    context: context,
-    isScrollControlled: true,
-    backgroundColor: Colors.transparent,
-    builder: (_) => const _SessionFormSheet(),
-  );
-}
-
-class _SessionFormSheet extends StatefulWidget {
-  const _SessionFormSheet();
-
-  @override
-  State<_SessionFormSheet> createState() => _SessionFormState();
-}
-
-class _SessionFormState extends State<_SessionFormSheet> {
-  final _formKey = GlobalKey<FormState>();
-  final _nomCtrl = TextEditingController();
-  final _joursCtrl = TextEditingController();
-  final _salaireCtrl = TextEditingController();
-  final _remarqueCtrl = TextEditingController();
-  String _fermeId = 'rhamna';
-  DateTime _date = DateTime.now();
-
-  @override
-  void initState() {
-    super.initState();
-    final f = context.read<AppProvider>().fermeFilter;
-    if (f != 'all') _fermeId = f;
-  }
-
-  @override
-  void dispose() {
-    _nomCtrl.dispose();
-    _joursCtrl.dispose();
-    _salaireCtrl.dispose();
-    _remarqueCtrl.dispose();
-    super.dispose();
-  }
-
-  Future<void> _save() async {
-    if (!_formKey.currentState!.validate()) return;
-    final session = TravailleurSession(
-      fermeId: _fermeId,
-      nom: _nomCtrl.text.trim(),
-      nbJours: double.parse(_joursCtrl.text.replaceAll(',', '.')),
-      salaireJournalier: double.parse(_salaireCtrl.text.replaceAll(',', '.')),
-      date: _date,
-      remarque: _remarqueCtrl.text.trim(),
-    );
-    await context.read<AppProvider>().addTravailleurSession(session);
-    if (mounted) Navigator.pop(context);
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final bottom = MediaQuery.of(context).viewInsets.bottom;
-    return Container(
-      margin: EdgeInsets.only(bottom: bottom),
-      padding: const EdgeInsets.fromLTRB(20, 20, 20, 24),
-      decoration: const BoxDecoration(
-        color: AppColors.bg,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
-      ),
-      child: Form(
-        key: _formKey,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: <Widget>[
-            _handle(),
-            const SizedBox(height: 18),
-            const Text('Enregistrer une session de travail', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900, color: AppColors.green2)),
-            const SizedBox(height: 18),
-            TextFormField(
-              controller: _nomCtrl,
-              decoration: const InputDecoration(labelText: 'Nom du travailleur *'),
-              validator: (v) => (v == null || v.isEmpty) ? 'Requis' : null,
-            ),
-            const SizedBox(height: 12),
-            Row(
-              children: <Widget>[
-                Expanded(
-                  child: TextFormField(
-                    controller: _joursCtrl,
-                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                    decoration: const InputDecoration(labelText: 'Nombre de jours *'),
-                    validator: (v) => (v == null || v.isEmpty) ? 'Requis' : null,
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: TextFormField(
-                    controller: _salaireCtrl,
-                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                    decoration: const InputDecoration(labelText: 'Salaire / jour MAD *'),
-                    validator: (v) => (v == null || v.isEmpty) ? 'Requis' : null,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            _fermePicker(),
-            const SizedBox(height: 12),
-            InkWell(
-              onTap: () async {
-                final picked = await showDatePicker(
-                  context: context,
-                  initialDate: _date,
-                  firstDate: DateTime(2020),
-                  lastDate: DateTime(2030),
-                );
-                if (picked != null) setState(() => _date = picked);
-              },
-              child: Container(
-                width: double.infinity,
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-                decoration: BoxDecoration(
-                  color: AppColors.bg3,
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: AppColors.borderSoft),
-                ),
-                child: Text('Date: ${fmtDate(_date)}', style: const TextStyle(fontWeight: FontWeight.w700)),
+            child: Text(
+              label,
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w800,
+                color: sel ? Colors.white : AppColors.text2,
               ),
             ),
-            const SizedBox(height: 12),
-            TextFormField(
-              controller: _remarqueCtrl,
-              decoration: const InputDecoration(labelText: 'Remarque (opt.)'),
-            ),
-            const SizedBox(height: 20),
-            SizedBox(width: double.infinity, child: ElevatedButton(onPressed: _save, child: const Text('Enregistrer'))),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _handle() => Center(
-        child: Container(
-          width: 40,
-          height: 4,
-          decoration: BoxDecoration(color: AppColors.border, borderRadius: BorderRadius.circular(2)),
-        ),
-      );
-
-  Widget _fermePicker() => Row(
-        children: <Widget>[
-          _fermeBtn('Rhamna', 'rhamna'),
-          const SizedBox(width: 10),
-          _fermeBtn('Srahna', 'srahna'),
-        ],
-      );
-
-  Widget _fermeBtn(String label, String value) {
-    final sel = _fermeId == value;
-    return Expanded(
-      child: GestureDetector(
-        onTap: () => setState(() => _fermeId = value),
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 150),
-          padding: const EdgeInsets.symmetric(vertical: 12),
-          decoration: BoxDecoration(
-            color: sel ? AppColors.green2 : AppColors.bg2,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: sel ? AppColors.green2 : AppColors.border),
-          ),
-          child: Center(
-            child: Text(label, style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: sel ? Colors.white : AppColors.text2)),
           ),
         ),
       ),
