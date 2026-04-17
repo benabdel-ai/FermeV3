@@ -343,6 +343,59 @@ class TravailleurSession {
       );
 }
 
+// ─── CheptelDepense ───────────────────────────────────────────────────────────
+
+class CheptelDepense {
+  final String id;
+  final String fermeId;
+  /// 'alimentation' | 'veterinaire' | 'berger' | 'materiel' | 'autre'
+  final String categorie;
+  final String sousCategorie;
+  final double montant;
+  final double quantite; // pour alimentation
+  final String unite;    // kg, bottes, sacs...
+  final DateTime date;
+  final String remarque;
+
+  CheptelDepense({
+    String? id,
+    required this.fermeId,
+    required this.categorie,
+    required this.sousCategorie,
+    required this.montant,
+    this.quantite = 0,
+    this.unite = '',
+    required this.date,
+    this.remarque = '',
+  }) : id = id ?? _uuid.v4();
+
+  double get prixUnitaire => quantite > 0 ? montant / quantite : 0;
+
+  Map<String, dynamic> toMap() => {
+        'id': id,
+        'fermeId': fermeId,
+        'categorie': categorie,
+        'sousCategorie': sousCategorie,
+        'montant': montant,
+        'quantite': quantite,
+        'unite': unite,
+        'date': date.toIso8601String().split('T').first,
+        'remarque': remarque,
+      };
+
+  factory CheptelDepense.fromMap(Map<String, dynamic> map) => CheptelDepense(
+        id: map['id'] as String,
+        fermeId: (map['fermeId'] ?? 'rhamna') as String,
+        categorie: map['categorie'] as String,
+        sousCategorie: (map['sousCategorie'] ?? '') as String,
+        montant: (map['montant'] as num).toDouble(),
+        quantite: (map['quantite'] as num? ?? 0).toDouble(),
+        unite: (map['unite'] ?? '') as String,
+        date: DateTime.parse(map['date'] as String),
+        remarque: (map['remarque'] ?? '') as String,
+      );
+}
+
 // ─── RecurringExpense ─────────────────────────────────────────────────────────
 
 class RecurringExpense {

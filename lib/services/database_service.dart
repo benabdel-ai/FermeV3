@@ -29,7 +29,7 @@ class DatabaseService {
 
     return openDatabase(
       path,
-      version: 7,
+      version: 8,
       onCreate: (database, version) async {
         await database.execute('''
           CREATE TABLE mouvements (
@@ -72,6 +72,7 @@ class DatabaseService {
 
         await _createAidTable(database);
         await _createFermeTables(database);
+        await _createCheptelDepensesTable(database);
         await _createCategoriesTable(database);
         await _seedCategories(database);
         await seedHistoricalData(database);
@@ -118,6 +119,21 @@ class DatabaseService {
           await database.execute("ALTER TABLE mouvements ADD COLUMN fournisseur TEXT DEFAULT ''");
           await database.execute("ALTER TABLE mouvements ADD COLUMN cause TEXT DEFAULT ''");
           await database.execute("ALTER TABLE mouvements ADD COLUMN mere TEXT DEFAULT ''");
+        }
+        if (oldVersion < 8) {
+          await database.execute('''
+            CREATE TABLE IF NOT EXISTS cheptel_depenses (
+              id TEXT PRIMARY KEY,
+              fermeId TEXT NOT NULL DEFAULT 'rhamna',
+              categorie TEXT NOT NULL,
+              sousCategorie TEXT DEFAULT '',
+              montant REAL NOT NULL,
+              quantite REAL NOT NULL DEFAULT 0,
+              unite TEXT DEFAULT '',
+              date TEXT NOT NULL,
+              remarque TEXT DEFAULT ''
+            )
+          ''');
         }
       },
     );
@@ -448,6 +464,41 @@ class DatabaseService {
     final database = await db;
     await database
         .delete('recurring_expenses', where: 'id = ?', whereArgs: [id]);
+  }
+
+  // ─── CheptelDepenses ──────────────────────────────────────────────────────
+
+  Future<void> _createCheptelDepensesTable(Database database) async {
+    await database.execute('''
+      CREATE TABLE IF NOT EXISTS cheptel_depenses (
+        id TEXT PRIMARY KEY,
+        fermeId TEXT NOT NULL DEFAULT 'rhamna',
+        categorie TEXT NOT NULL,
+        sousCategorie TEXT DEFAULT '',
+        montant REAL NOT NULL,
+        quantite REAL NOT NULL DEFAULT 0,
+        unite TEXT DEFAULT '',
+        date TEXT NOT NULL,
+        remarque TEXT DEFAULT ''
+      )
+    ''');
+  }
+
+  Future<List<CheptelDepense>> getCheptelDepenses() async {
+    final database = await db;
+    final rows = await database.query('cheptel_depenses', orderBy: 'date DESC');
+    return rows.map(CheptelDepense.fromMap).toList();
+  }
+
+  Future<void> insertCheptelDepense(CheptelDepense d) async {
+    final database = await db;
+    await database.insert('cheptel_depenses', d.toMap(),
+        conflictAlgorithm: ConflictAlgorithm.replace);
+  }
+
+  Future<void> deleteCheptelDepense(String id) async {
+    final database = await db;
+    await database.delete('cheptel_depenses', where: 'id = ?', whereArgs: [id]);
   }
 
   // ─── Categories ────────────────────────────────────────────────────────────

@@ -1367,6 +1367,266 @@ class _TravailleurFormState extends State<_TravailleurForm> {
   }
 }
 
+// ─── Cheptel Dépense Form ─────────────────────────────────────────────────────
+
+Future<void> showCheptelDepenseForm(BuildContext context,
+    {String initialCategorie = 'alimentation'}) {
+  return showModalBottomSheet<void>(
+    context: context,
+    isScrollControlled: true,
+    backgroundColor: Colors.transparent,
+    builder: (_) =>
+        _CheptelDepenseForm(initialCategorie: initialCategorie),
+  );
+}
+
+class _CheptelDepenseForm extends StatefulWidget {
+  const _CheptelDepenseForm({required this.initialCategorie});
+  final String initialCategorie;
+
+  @override
+  State<_CheptelDepenseForm> createState() => _CheptelDepenseFormState();
+}
+
+class _CheptelDepenseFormState extends State<_CheptelDepenseForm> {
+  final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
+  String _fermeId = 'rhamna';
+  late String _categorie;
+  String _sousCategorie = '';
+  double _montant = 0;
+  double _quantite = 0;
+  String _unite = 'kg';
+  DateTime _date = DateTime.now();
+  String _remarque = '';
+
+  static const Map<String, List<String>> _sousCats = <String, List<String>>{
+    'alimentation': ['Orge', 'Foin', 'Son', 'Luzerne', 'Maïs', 'Paille', 'Complément', 'Autre'],
+    'veterinaire': ['Vaccination', 'Traitement', 'Déparasitage', 'Consultation', 'Médicaments', 'Autre'],
+    'berger': ['Salaire mensuel', 'Prime', 'Avance', 'Autre'],
+    'materiel': ['Filets', 'Caisses', 'Abreuvoir', 'Équipement', 'Réparation', 'Autre'],
+    'autre': ['Autre'],
+  };
+
+  static const List<(String, String, String)> _categories = <(String, String, String)>[
+    ('alimentation', '🌾', 'Alimentation'),
+    ('veterinaire', '💉', 'Vétérinaire'),
+    ('berger', '👨‍🌾', 'Berger'),
+    ('materiel', '📦', 'Matériel'),
+    ('autre', '💼', 'Autre'),
+  ];
+
+  bool get _isAlim => _categorie == 'alimentation';
+
+  double _parseD(String? v) =>
+      double.tryParse((v ?? '').replaceAll(',', '.')) ?? 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _categorie = widget.initialCategorie;
+    _sousCategorie = _sousCats[_categorie]!.first;
+    final filter = context.read<AppProvider>().fermeFilter;
+    _fermeId = filter == 'all' ? 'rhamna' : filter;
+  }
+
+  void _onCategorieChange(String cat) {
+    setState(() {
+      _categorie = cat;
+      _sousCategorie = _sousCats[cat]!.first;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final sousCatList = _sousCats[_categorie]!;
+    final prixUnitaire = _isAlim && _quantite > 0 ? _montant / _quantite : 0.0;
+
+    return _Sheet(
+      title: '🐑 Dépense cheptel',
+      child: Form(
+        key: _formKey,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: <Widget>[
+            _label('Ferme'),
+            _FermeSelector(
+                value: _fermeId,
+                onChanged: (v) => setState(() => _fermeId = v)),
+            const SizedBox(height: 14),
+
+            // Category selector
+            _label('Catégorie'),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: _categories.map((cat) {
+                final selected = _categorie == cat.$1;
+                return GestureDetector(
+                  onTap: () => _onCategorieChange(cat.$1),
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 150),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 14, vertical: 9),
+                    decoration: BoxDecoration(
+                      color: selected
+                          ? const Color(0xFF4E342E)
+                          : AppColors.bg4,
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Text(
+                      '${cat.$2} ${cat.$3}',
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w700,
+                        color: selected ? Colors.white : AppColors.text2,
+                      ),
+                    ),
+                  ),
+                );
+              }).toList(),
+            ),
+            const SizedBox(height: 14),
+
+            // Sous-catégorie
+            _label('Type'),
+            _dropdown<String>(
+              sousCatList
+                  .map((s) =>
+                      DropdownMenuItem<String>(value: s, child: Text(s)))
+                  .toList(),
+              sousCatList.contains(_sousCategorie)
+                  ? _sousCategorie
+                  : sousCatList.first,
+              (v) => setState(() => _sousCategorie = v ?? _sousCategorie),
+            ),
+            const SizedBox(height: 14),
+
+            // Alimentation : quantité + unité
+            if (_isAlim) ...<Widget>[
+              Row(
+                children: <Widget>[
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: <Widget>[
+                        _label('Quantité'),
+                        TextFormField(
+                          keyboardType:
+                              const TextInputType.numberWithOptions(decimal: true),
+                          decoration:
+                              const InputDecoration(hintText: '0'),
+                          onChanged: (v) =>
+                              setState(() => _quantite = _parseD(v)),
+                          onSaved: (v) => _quantite = _parseD(v),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: <Widget>[
+                        _label('Unité'),
+                        _dropdown<String>(
+                          ['kg', 'quintal', 'bottes', 'sacs', 'unité']
+                              .map((u) => DropdownMenuItem<String>(
+                                  value: u, child: Text(u)))
+                              .toList(),
+                          _unite,
+                          (v) => setState(() => _unite = v ?? _unite),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+            ],
+
+            // Montant
+            _label('Montant total (MAD)'),
+            TextFormField(
+              keyboardType:
+                  const TextInputType.numberWithOptions(decimal: true),
+              decoration: const InputDecoration(suffixText: 'MAD'),
+              validator: (v) {
+                if (_parseD(v) <= 0) return 'Requis';
+                return null;
+              },
+              onChanged: (v) => setState(() => _montant = _parseD(v)),
+              onSaved: (v) => _montant = _parseD(v),
+            ),
+
+            // Prix unitaire auto for alimentation
+            if (_isAlim && prixUnitaire > 0)
+              Padding(
+                padding: const EdgeInsets.only(top: 6),
+                child: Text(
+                  '≈ ${prixUnitaire.toStringAsFixed(2)} MAD / $_unite',
+                  style: const TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.text2,
+                  ),
+                ),
+              ),
+
+            const SizedBox(height: 14),
+            _DateField(
+                label: 'Date',
+                value: _date,
+                onChanged: (d) => setState(() => _date = d)),
+            const SizedBox(height: 14),
+            _label('Remarque'),
+            TextFormField(
+              maxLines: 2,
+              decoration: const InputDecoration(
+                  hintText: 'Cible, fournisseur, observation...'),
+              onSaved: (v) => _remarque = v ?? '',
+            ),
+            const SizedBox(height: 20),
+            _submitBtn(
+              label: 'Enregistrer la dépense',
+              color: const Color(0xFF4E342E),
+              onTap: _save,
+            ),
+            const SizedBox(height: 8),
+            _cancelBtn(context),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _save() async {
+    if (!_formKey.currentState!.validate()) return;
+    _formKey.currentState!.save();
+
+    await context.read<AppProvider>().addCheptelDepense(
+          CheptelDepense(
+            fermeId: _fermeId,
+            categorie: _categorie,
+            sousCategorie: _sousCategorie,
+            montant: _montant,
+            quantite: _isAlim ? _quantite : 0,
+            unite: _isAlim ? _unite : '',
+            date: _date,
+            remarque: _remarque,
+          ),
+        );
+
+    if (!mounted) return;
+    Navigator.pop(context);
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Dépense enregistrée'),
+        backgroundColor: Color(0xFF4E342E),
+      ),
+    );
+  }
+}
+
 // ─── Section Header ───────────────────────────────────────────────────────────
 
 class _SectionHeader extends StatelessWidget {

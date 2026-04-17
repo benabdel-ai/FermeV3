@@ -26,6 +26,7 @@ class AppProvider extends ChangeNotifier {
   List<TravailleurSession> travailleurSessions = <TravailleurSession>[];
   List<RecurringExpense> recurringExpenses = <RecurringExpense>[];
   List<AidMouton> aidMoutons = <AidMouton>[];
+  List<CheptelDepense> cheptelDepenses = <CheptelDepense>[];
 
   List<AppCategory> depCategories = <AppCategory>[];
   List<AppCategory> revCategories = <AppCategory>[];
@@ -53,6 +54,7 @@ class AppProvider extends ChangeNotifier {
         travailleurSessions = await _db.getTravailleurSessions();
         recurringExpenses = await _db.getRecurringExpenses();
         aidMoutons = await _db.getAidMoutons();
+        cheptelDepenses = await _db.getCheptelDepenses();
         depCategories = await _db.getCategories('depense');
         revCategories = await _db.getCategories('revenu');
         cultureCategories = await _db.getCategories('culture');
@@ -434,6 +436,64 @@ class AppProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  // ─── Getters CheptelDepenses ───────────────────────────────────────────────
+
+  List<CheptelDepense> get cheptelDepensesFiltrees => fermeFilter == 'all'
+      ? cheptelDepenses
+      : cheptelDepenses.where((d) => d.fermeId == fermeFilter).toList();
+
+  double get totalCheptelDepenses =>
+      cheptelDepensesFiltrees.fold(0.0, (s, d) => s + d.montant);
+
+  Map<String, double> cheptelDepensesParCategorie() {
+    final result = <String, double>{};
+    for (final d in cheptelDepensesFiltrees) {
+      result[d.categorie] = (result[d.categorie] ?? 0) + d.montant;
+    }
+    return Map.fromEntries(
+        result.entries.toList()..sort((a, b) => b.value.compareTo(a.value)));
+  }
+
+  // ─── CRUD CheptelDepenses ──────────────────────────────────────────────────
+
+  Future<void> addCheptelDepense(CheptelDepense d) async {
+    if (_isWeb) return;
+    await _db.insertCheptelDepense(d);
+
+    // Mirror dans les dépenses générales avec catégorie correspondante
+    final catLabel = _cheptelDepCatLabel(d.categorie);
+    final detail = d.sousCategorie.isNotEmpty
+        ? '${d.sousCategorie}${d.quantite > 0 ? " · ${d.quantite.toStringAsFixed(0)} ${d.unite}" : ""}'
+        : '';
+    await _db.insertDepense(Depense(
+      montant: d.montant,
+      date: d.date,
+      categorie: catLabel,
+      remarque: detail.isNotEmpty ? detail : d.remarque,
+      fermeId: d.fermeId,
+    ));
+    depenses = await _db.getDepenses();
+    cheptelDepenses = await _db.getCheptelDepenses();
+    notifyListeners();
+  }
+
+  String _cheptelDepCatLabel(String categorie) {
+    switch (categorie) {
+      case 'alimentation': return 'Alimentation';
+      case 'veterinaire': return 'Vétérinaire';
+      case 'berger': return "Main-d'œuvre";
+      case 'materiel': return 'Équipement';
+      default: return 'Autre';
+    }
+  }
+
+  Future<void> deleteCheptelDepense(String id) async {
+    if (_isWeb) return;
+    await _db.deleteCheptelDepense(id);
+    cheptelDepenses.removeWhere((d) => d.id == id);
+    notifyListeners();
+  }
+
   Future<void> exportDatabase() => _db.exportDatabase();
 
   // ─── Supabase Sync ─────────────────────────────────────────────────────────
@@ -477,6 +537,7 @@ class AppProvider extends ChangeNotifier {
     triturations = <Trituration>[];
     travailleurSessions = <TravailleurSession>[];
     recurringExpenses = <RecurringExpense>[];
+    cheptelDepenses = <CheptelDepense>[];
     notifyListeners();
   }
 }

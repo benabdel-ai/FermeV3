@@ -661,22 +661,111 @@ class _ActionBtn extends StatelessWidget {
 class CheptelScreen extends StatelessWidget {
   const CheptelScreen({super.key});
 
+  static const Map<String, (String, String)> _catMeta =
+      <String, (String, String)>{
+    'alimentation': ('🌾', 'Alimentation'),
+    'veterinaire': ('💉', 'Vétérinaire'),
+    'berger': ('👨‍🌾', 'Berger'),
+    'materiel': ('📦', 'Matériel'),
+    'autre': ('💼', 'Autre'),
+  };
+
   @override
   Widget build(BuildContext context) {
     final provider = context.watch<AppProvider>();
     final stock = provider.stock;
+
+    // ── Financials ──────────────────────────────────────────────────────────
+    final ventes = provider.mouvements
+        .where((m) => m.type.startsWith('vente'))
+        .fold(0.0, (s, m) => s + m.montantTotal);
+    final achats = provider.mouvements
+        .where((m) => m.type.startsWith('achat'))
+        .fold(0.0, (s, m) => s + m.montantTotal);
+    final totalDep = provider.totalCheptelDepenses + achats;
+    final bilanNet = ventes - totalDep;
+    final depByCategorie = provider.cheptelDepensesParCategorie();
+    final depenses = provider.cheptelDepensesFiltrees;
 
     return SingleChildScrollView(
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
-          const SectionTitle('Cheptel', sub: 'Suivi des entrées, sorties et état actuel'),
+          const SectionTitle('🐑 Cheptel',
+              sub: "Troupeau, dépenses d'élevage et bilan"),
+
+          // ── Bilan élevage ─────────────────────────────────────────────────
+          Container(
+            width: double.infinity,
+            margin: const EdgeInsets.only(bottom: 14),
+            padding: const EdgeInsets.all(18),
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                colors: <Color>[Color(0xFF4E342E), Color(0xFF6D4C41)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              borderRadius: BorderRadius.circular(24),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                const Text('📊 Bilan élevage',
+                    style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                        color: Colors.white60)),
+                const SizedBox(height: 10),
+                Row(
+                  children: <Widget>[
+                    _BilanCol(
+                        label: 'Ventes',
+                        value: fmtMAD(ventes),
+                        color: const Color(0xFFA5D6A7)),
+                    _BilanCol(
+                        label: 'Charges',
+                        value: fmtMAD(totalDep),
+                        color: const Color(0xFFFFCC80)),
+                    _BilanCol(
+                        label: 'Bilan net',
+                        value: fmtMAD(bilanNet),
+                        color: bilanNet >= 0
+                            ? const Color(0xFFA5D6A7)
+                            : const Color(0xFFEF9A9A)),
+                  ],
+                ),
+                const SizedBox(height: 10),
+                Row(
+                  children: <Widget>[
+                    _BilanChip('🐑 ${stock.femelles} brebis'),
+                    const SizedBox(width: 6),
+                    _BilanChip('🐏 ${stock.males} béliers'),
+                    const SizedBox(width: 6),
+                    _BilanChip(
+                        '🐣 ${stock.agneauxF + stock.agneauxM} agneaux'),
+                  ],
+                ),
+              ],
+            ),
+          ),
+
+          // ── État actuel ───────────────────────────────────────────────────
           AppCard(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: <Widget>[
-                const CardTitle('ÉTAT ACTUEL'),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: <Widget>[
+                    const CardTitle('ÉTAT DU TROUPEAU'),
+                    Text('${stock.total} têtes',
+                        style: const TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w900,
+                            color: AppColors.green2)),
+                  ],
+                ),
                 GridView.count(
                   crossAxisCount: 2,
                   shrinkWrap: true,
@@ -685,56 +774,96 @@ class CheptelScreen extends StatelessWidget {
                   mainAxisSpacing: 12,
                   childAspectRatio: 1.22,
                   children: <Widget>[
-                    KpiCard(emoji: '🐑', value: '${stock.femelles}', label: 'Femelles', onTap: () => _showCheptelDetail(context, 'femelles')),
-                    KpiCard(emoji: '🐏', value: '${stock.males}', label: 'Mâles', onTap: () => _showCheptelDetail(context, 'males')),
-                    KpiCard(emoji: '🐣', value: '${stock.agneauxF}', label: 'Agneaux femelles', onTap: () => _showCheptelDetail(context, 'agf')),
-                    KpiCard(emoji: '🐥', value: '${stock.agneauxM}', label: 'Agneaux mâles', onTap: () => _showCheptelDetail(context, 'agm')),
+                    KpiCard(
+                        emoji: '🐑',
+                        value: '${stock.femelles}',
+                        label: 'Femelles',
+                        onTap: () =>
+                            _showCheptelDetail(context, 'femelles')),
+                    KpiCard(
+                        emoji: '🐏',
+                        value: '${stock.males}',
+                        label: 'Mâles',
+                        onTap: () => _showCheptelDetail(context, 'males')),
+                    KpiCard(
+                        emoji: '🐣',
+                        value: '${stock.agneauxF}',
+                        label: 'Agneaux ♀',
+                        onTap: () => _showCheptelDetail(context, 'agf')),
+                    KpiCard(
+                        emoji: '🐥',
+                        value: '${stock.agneauxM}',
+                        label: 'Agneaux ♂',
+                        onTap: () => _showCheptelDetail(context, 'agm')),
                   ],
                 ),
               ],
             ),
           ),
+
+          // ── Mouvements ────────────────────────────────────────────────────
           AppCard(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: <Widget>[
-                const CardTitle('AJOUTER UN MOUVEMENT'),
+                const CardTitle('MOUVEMENTS TROUPEAU'),
                 GridView.count(
-                  crossAxisCount: 2,
+                  crossAxisCount: 3,
                   shrinkWrap: true,
                   physics: const NeverScrollableScrollPhysics(),
-                  crossAxisSpacing: 10,
-                  mainAxisSpacing: 10,
-                  childAspectRatio: 1.25,
+                  crossAxisSpacing: 8,
+                  mainAxisSpacing: 8,
+                  childAspectRatio: 1.4,
                   children: <Widget>[
-                    MvtBtn(emoji: '🐣', label: 'Naissance femelle', onTap: () => showMvtForm(context, initialType: 'naissance_agf')),
-                    MvtBtn(emoji: '🐥', label: 'Naissance mâle', onTap: () => showMvtForm(context, initialType: 'naissance_agm')),
-                    MvtBtn(emoji: '🛒', label: 'Achat', onTap: () => showMvtForm(context, initialType: 'achat_femelle')),
-                    MvtBtn(emoji: '🤝', label: 'Vente', onTap: () => showMvtForm(context, initialType: 'vente_femelle')),
-                    MvtBtn(emoji: '💀', label: 'Décès', onTap: () => showMvtForm(context, initialType: 'deces_femelle')),
-                    MvtBtn(emoji: '⚙️', label: 'Stock initial', onTap: () => showMvtForm(context, initialType: 'init_femelles')),
+                    MvtBtn(
+                        emoji: '🍼',
+                        label: 'Naissance ♀',
+                        onTap: () => showMvtForm(context,
+                            initialType: 'naissance_agf')),
+                    MvtBtn(
+                        emoji: '🐣',
+                        label: 'Naissance ♂',
+                        onTap: () => showMvtForm(context,
+                            initialType: 'naissance_agm')),
+                    MvtBtn(
+                        emoji: '🛒',
+                        label: 'Achat',
+                        onTap: () => showMvtForm(context,
+                            initialType: 'achat_femelle')),
+                    MvtBtn(
+                        emoji: '🤝',
+                        label: 'Vente',
+                        onTap: () => showMvtForm(context,
+                            initialType: 'vente_femelle')),
+                    MvtBtn(
+                        emoji: '💀',
+                        label: 'Décès',
+                        onTap: () => showMvtForm(context,
+                            initialType: 'deces_femelle')),
+                    MvtBtn(
+                        emoji: '⚙️',
+                        label: 'Stock init.',
+                        onTap: () => showMvtForm(context,
+                            initialType: 'init_femelles')),
                   ],
                 ),
-              ],
-            ),
-          ),
-          AppCard(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                const CardTitle('DERNIERS MOUVEMENTS'),
-                if (provider.mouvements.isEmpty)
-                  const EmptyState(emoji: '🐑', text: 'Aucun mouvement enregistré')
-                else
-                  ...provider.mouvements.reversed.take(20).map((m) {
+                if (provider.mouvements.isNotEmpty) ...<Widget>[
+                  const SizedBox(height: 10),
+                  ...provider.mouvements.reversed.take(10).map((m) {
                     final details = <String>[fmtDate(m.date)];
-                    if (m.prixUnitaire > 0) details.add('${m.prixUnitaire.toStringAsFixed(0)} MAD/tête');
-                    if (m.montantTotal > 0) details.add('Total: ${fmtMAD(m.montantTotal)}');
-                    if (m.poids > 0) details.add('${m.poids.toStringAsFixed(0)} kg');
-                    if (m.acheteur.isNotEmpty) details.add('→ ${m.acheteur}');
-                    if (m.fournisseur.isNotEmpty) details.add('← ${m.fournisseur}');
-                    if (m.cause.isNotEmpty) details.add('Cause: ${m.cause}');
-                    if (m.mere.isNotEmpty) details.add('Mère: ${m.mere}');
+                    if (m.prixUnitaire > 0)
+                      details.add(
+                          '${m.prixUnitaire.toStringAsFixed(0)} MAD/tête');
+                    if (m.montantTotal > 0)
+                      details.add(fmtMAD(m.montantTotal));
+                    if (m.acheteur.isNotEmpty)
+                      details.add('→ ${m.acheteur}');
+                    if (m.fournisseur.isNotEmpty)
+                      details.add('← ${m.fournisseur}');
+                    if (m.cause.isNotEmpty)
+                      details.add('Cause: ${m.cause}');
+                    if (m.mere.isNotEmpty)
+                      details.add('Mère: ${m.mere}');
                     if (m.remarque.isNotEmpty) details.add(m.remarque);
                     return HistoryItem(
                       emoji: m.emoji,
@@ -743,9 +872,127 @@ class CheptelScreen extends StatelessWidget {
                       value: '×${m.qte}',
                       valueColor: mvtFgColor(m.color),
                       bgColor: mvtBgColor(m.color),
-                      onDelete: () => _confirmDelete(context, () => context.read<AppProvider>().deleteMouvement(m.id)),
+                      onDelete: () => _confirmDelete(context,
+                          () => context
+                              .read<AppProvider>()
+                              .deleteMouvement(m.id)),
                     );
                   }),
+                ],
+              ],
+            ),
+          ),
+
+          // ── Dépenses d'élevage ────────────────────────────────────────────
+          AppCard(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: <Widget>[
+                    const CardTitle('DÉPENSES D\'ÉLEVAGE'),
+                    if (depenses.isNotEmpty)
+                      Text(
+                        '-${fmtMAD(provider.totalCheptelDepenses)}',
+                        style: const TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w900,
+                            color: AppColors.red),
+                      ),
+                  ],
+                ),
+
+                // Quick add buttons
+                GridView.count(
+                  crossAxisCount: 3,
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  crossAxisSpacing: 8,
+                  mainAxisSpacing: 8,
+                  childAspectRatio: 1.5,
+                  children: <Widget>[
+                    MvtBtn(
+                        emoji: '🌾',
+                        label: 'Alimentation',
+                        onTap: () => showCheptelDepenseForm(context,
+                            initialCategorie: 'alimentation')),
+                    MvtBtn(
+                        emoji: '💉',
+                        label: 'Vétérinaire',
+                        onTap: () => showCheptelDepenseForm(context,
+                            initialCategorie: 'veterinaire')),
+                    MvtBtn(
+                        emoji: '👨‍🌾',
+                        label: 'Berger',
+                        onTap: () => showCheptelDepenseForm(context,
+                            initialCategorie: 'berger')),
+                    MvtBtn(
+                        emoji: '📦',
+                        label: 'Matériel',
+                        onTap: () => showCheptelDepenseForm(context,
+                            initialCategorie: 'materiel')),
+                    MvtBtn(
+                        emoji: '💼',
+                        label: 'Autre',
+                        onTap: () => showCheptelDepenseForm(context,
+                            initialCategorie: 'autre')),
+                  ],
+                ),
+
+                // Category bars
+                if (depByCategorie.isNotEmpty) ...<Widget>[
+                  const SizedBox(height: 14),
+                  ...depByCategorie.entries.map((e) {
+                    final meta = _catMeta[e.key] ??
+                        ('💼', e.key);
+                    final pct = provider.totalCheptelDepenses > 0
+                        ? e.value / provider.totalCheptelDepenses
+                        : 0.0;
+                    return _DepCatBar(
+                      emoji: meta.$1,
+                      label: meta.$2,
+                      montant: e.value,
+                      pct: pct,
+                    );
+                  }),
+                ],
+
+                // History
+                if (depenses.isNotEmpty) ...<Widget>[
+                  const SizedBox(height: 12),
+                  const Divider(),
+                  ...depenses.take(15).map((d) {
+                    final meta = _catMeta[d.categorie] ?? ('💼', d.categorie);
+                    final sub = <String>[fmtDate(d.date)];
+                    if (d.sousCategorie.isNotEmpty)
+                      sub.add(d.sousCategorie);
+                    if (d.quantite > 0)
+                      sub.add(
+                          '${d.quantite.toStringAsFixed(0)} ${d.unite}');
+                    if (d.remarque.isNotEmpty) sub.add(d.remarque);
+                    return HistoryItem(
+                      emoji: meta.$1,
+                      title: meta.$2,
+                      subtitle: sub.join(' · '),
+                      value: '-${fmtMAD(d.montant)}',
+                      valueColor: AppColors.red,
+                      bgColor: AppColors.redBg,
+                      onDelete: () => _confirmDelete(
+                        context,
+                        () => context
+                            .read<AppProvider>()
+                            .deleteCheptelDepense(d.id),
+                      ),
+                    );
+                  }),
+                ] else
+                  const Padding(
+                    padding: EdgeInsets.only(top: 10),
+                    child: EmptyState(
+                        emoji: '💰',
+                        text: 'Aucune dépense enregistrée'),
+                  ),
               ],
             ),
           ),
@@ -754,6 +1001,113 @@ class CheptelScreen extends StatelessWidget {
     );
   }
 }
+
+// ── Cheptel sub-widgets ────────────────────────────────────────────────────────
+
+class _BilanCol extends StatelessWidget {
+  const _BilanCol(
+      {required this.label, required this.value, required this.color});
+  final String label;
+  final String value;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) => Expanded(
+        child: Column(
+          children: <Widget>[
+            Text(value,
+                style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w900,
+                    color: color)),
+            Text(label,
+                style: const TextStyle(
+                    fontSize: 10,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.white54)),
+          ],
+        ),
+      );
+}
+
+class _BilanChip extends StatelessWidget {
+  const _BilanChip(this.label);
+  final String label;
+
+  @override
+  Widget build(BuildContext context) => Container(
+        padding:
+            const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        decoration: BoxDecoration(
+          color: Colors.white.withOpacity(0.15),
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Text(label,
+            style: const TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w700,
+                color: Colors.white)),
+      );
+}
+
+class _DepCatBar extends StatelessWidget {
+  const _DepCatBar(
+      {required this.emoji,
+      required this.label,
+      required this.montant,
+      required this.pct});
+  final String emoji;
+  final String label;
+  final double montant;
+  final double pct;
+
+  @override
+  Widget build(BuildContext context) => Padding(
+        padding: const EdgeInsets.only(bottom: 10),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: <Widget>[
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: <Widget>[
+                Text('$emoji $label',
+                    style: const TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.text)),
+                Row(
+                  children: <Widget>[
+                    Text(
+                      '${(pct * 100).toStringAsFixed(0)}%',
+                      style: const TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.text3),
+                    ),
+                    const SizedBox(width: 8),
+                    Text(fmtMAD(montant),
+                        style: const TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w900,
+                            color: AppColors.red)),
+                  ],
+                ),
+              ],
+            ),
+            const SizedBox(height: 4),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(4),
+              child: LinearProgressIndicator(
+                value: pct.clamp(0.0, 1.0),
+                minHeight: 7,
+                backgroundColor: AppColors.bg4,
+                valueColor: const AlwaysStoppedAnimation<Color>(
+                    Color(0xFF6D4C41)),
+              ),
+            ),
+          ],
+        ),
+      );
 
 class DepensesScreen extends StatelessWidget {
   const DepensesScreen({super.key});
