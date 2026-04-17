@@ -1108,6 +1108,7 @@ class _DepCatBar extends StatelessWidget {
           ],
         ),
       );
+}
 
 class DepensesScreen extends StatelessWidget {
   const DepensesScreen({super.key});
